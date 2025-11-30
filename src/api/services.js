@@ -9,7 +9,7 @@ import {
 // Authentication
 export const authService = {
   async login(credentials) {
-    const response = await apiClient.post('/auth/login', credentials);
+    const response = await apiClient.post('/api/auth/login', credentials);
     if (response.token) {
       apiClient.setToken(response.token);
     }
