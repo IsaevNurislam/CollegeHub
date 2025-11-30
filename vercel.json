@@ -4,5 +4,8 @@
   "framework": "vite",
   "env": {
     "VITE_API_URL": "@vite_api_url"
-  }
+  },
+  "routes": [
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
