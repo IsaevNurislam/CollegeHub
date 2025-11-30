@@ -72,8 +72,12 @@ export default function ProfileView({ user, onUpdateUser }) {
       <Card>
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-2xl">
-              {user.avatar}
+            <div className="w-16 h-16 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-2xl overflow-hidden">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                user.avatar || user.name?.[0] || 'U'
+              )}
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>

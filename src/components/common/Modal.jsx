@@ -13,12 +13,12 @@ export default function Modal({ isOpen, title, onClose, onSubmit, children, prim
       role="presentation"
     >
       <div
-        className="bg-white rounded-lg shadow-lg max-w-md w-full"
+        className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-[90vh] flex flex-col"
         onClick={stopPropagation}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-xl font-bold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
@@ -27,10 +27,10 @@ export default function Modal({ isOpen, title, onClose, onSubmit, children, prim
             <X size={24} />
           </button>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {children}
         </div>
-        <div className="flex gap-3 justify-end p-6 border-t border-gray-200">
+        <div className="flex gap-3 justify-end p-6 border-t border-gray-200 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
