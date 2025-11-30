@@ -149,6 +149,7 @@ export default function App() {
         website: ''
       },
       clubBackground: '',
+      clubAvatar: '',
     });
     setModalOpen(true);
   };
@@ -532,6 +533,25 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Аватарка клуба</label>
+              <div className="h-20 rounded-2xl border border-dashed border-gray-300 bg-slate-50 overflow-hidden flex items-center justify-center">
+                {formData.clubAvatar ? (
+                  <img src={formData.clubAvatar} alt="club avatar" className="h-full w-full object-cover rounded-2xl" />
+                ) : (
+                  <div className="text-xs text-gray-500">Аватарка не выбрана</div>
+                )}
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 cursor-pointer">
+                Загрузить аватарку
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleBackgroundUpload('clubAvatar', e.target.files?.[0])}
+                />
+              </label>
+            </div>
+            <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Фон клуба</label>
               <div className="h-28 rounded-2xl border border-dashed border-gray-300 bg-slate-50 overflow-hidden">
                 {formData.clubBackground ? (
@@ -553,10 +573,15 @@ export default function App() {
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-xs font-semibold text-gray-600 mb-2">Предпросмотр:</p>
               <div
-                className="h-16 rounded-lg mb-2 overflow-hidden border border-gray-200"
+                className="h-20 rounded-lg mb-3 overflow-hidden border border-gray-200 relative"
                 style={formData.clubBackground ? { backgroundImage: `url(${formData.clubBackground})`, backgroundSize: 'cover' } : { backgroundColor: '#e0e7ff' }}
               >
                 {!formData.clubBackground && <div className={`${formData.color || 'bg-sky-600'} h-full w-full`} />}
+                {formData.clubAvatar && (
+                  <div className="absolute top-2 left-2 h-12 w-12 rounded-full border-2 border-white overflow-hidden shadow-md">
+                    <img src={formData.clubAvatar} alt="avatar" className="h-full w-full object-cover" />
+                  </div>
+                )}
               </div>
               <h3 className="font-bold text-gray-900">{formData.name || 'Название клуба'}</h3>
               <p className="text-sm text-gray-600">{formData.category || 'Категория'}</p>
