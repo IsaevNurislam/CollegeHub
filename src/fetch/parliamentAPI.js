@@ -1,6 +1,6 @@
 import { apiClient } from '../api/client';
 
-const basePath = '/parliament';
+const basePath = '/api/parliament';
 
 export const getParliamentMembers = () => apiClient.get(`${basePath}/getAll`);
 export const addParliamentMember = (member) => apiClient.post(`${basePath}/add`, member);
