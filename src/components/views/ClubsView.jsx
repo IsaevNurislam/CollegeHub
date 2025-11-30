@@ -33,10 +33,10 @@ export default function ClubsView({ clubs, onCreateClub, joinedClubs = [], onJoi
               <Card
                 key={club.id}
                 onClick={() => onViewClub?.(club)}
-                className="hover:shadow-lg transition-all duration-300 group cursor-pointer relative overflow-visible"
+                className="hover:shadow-lg transition-all duration-300 group cursor-pointer relative overflow-visible flex flex-col"
               >
                 <div
-                  className="h-24 rounded-t-lg -mx-6 -mt-6 relative mb-6 overflow-hidden"
+                  className="h-24 rounded-t-lg -mx-6 -mt-6 relative mb-6 overflow-hidden flex-shrink-0"
                   style={headerStyle}
                 >
                   {!club.backgroundUrl && (
@@ -44,17 +44,17 @@ export default function ClubsView({ clubs, onCreateClub, joinedClubs = [], onJoi
                   )}
                 </div>
                 {club.clubAvatar ? (
-                  <div className="absolute top-16 left-6 h-14 w-14 rounded-full border-3 border-white overflow-hidden shadow-lg">
+                  <div className="absolute top-16 left-6 h-14 w-14 rounded-full border-3 border-white overflow-hidden shadow-lg flex-shrink-0">
                     <img src={club.clubAvatar} alt={club.name} className="h-full w-full object-cover" />
                   </div>
                 ) : (
-                  <div className="absolute top-16 left-6 w-14 h-14 bg-white rounded-full p-1 shadow-lg">
+                  <div className="absolute top-16 left-6 w-14 h-14 bg-white rounded-full p-1 shadow-lg flex-shrink-0">
                     <div className={`w-full h-full rounded-full ${club.color} opacity-80 flex items-center justify-center text-white font-bold text-lg`}>
                       {club.name[0]}
                     </div>
                   </div>
                 )}
-                <div className="pt-2">
+                <div className="pt-2 flex flex-col flex-grow">
                   <div className="flex justify-between items-start">
                     <div className="min-w-0 pr-2">
                       <h3 className="font-bold text-lg text-gray-900 truncate">{club.name}</h3>
@@ -68,7 +68,7 @@ export default function ClubsView({ clubs, onCreateClub, joinedClubs = [], onJoi
                     </div>
                     <Badge>{club.members} {t('clubs.members_label')}</Badge>
                   </div>
-                  <p className="text-gray-600 mt-3 text-sm h-10 overflow-hidden line-clamp-2">
+                  <p className="text-gray-600 mt-3 text-sm h-10 overflow-hidden line-clamp-2 flex-grow">
                     {club.descriptionKey ? t(club.descriptionKey) : club.description}
                   </p>
                   <button
@@ -80,7 +80,7 @@ export default function ClubsView({ clubs, onCreateClub, joinedClubs = [], onJoi
                         onJoinClub(club.id);
                       }
                     }}
-                    className={`w-full mt-4 border border-sky-600 py-2 rounded-lg transition-colors font-medium text-sm ${
+                    className={`w-full mt-4 border border-sky-600 py-2 rounded-lg transition-colors font-medium text-sm flex-shrink-0 ${
                       joinedClubs.includes(club.id)
                         ? 'bg-sky-600 text-white cursor-pointer hover:bg-sky-700'
                         : 'text-sky-600 hover:bg-sky-600 hover:text-white'

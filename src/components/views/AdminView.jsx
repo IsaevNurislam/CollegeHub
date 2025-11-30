@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../common/UI';
 import { newsService, parliamentService, clubsService, projectsService } from '../../api/services';
-import { Trash2, Edit2, CheckCircle } from 'lucide-react';
+import { Trash2, Edit2, CheckCircle, Mail, Check } from 'lucide-react';
 import ConfirmModal from '../common/ConfirmModal';
 import Modal from '../common/Modal';
 
@@ -25,7 +25,7 @@ const placeholderStyles = `
   }
 `;
 
-export default function AdminView({ user }) {
+export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
   const [activeTab, setActiveTab] = useState('news');
   const [allNews, setAllNews] = useState([]);
   const [newNewsForm, setNewNewsForm] = useState({ author: 'Студенческий Совет', content: '', tags: '' });
@@ -44,10 +44,70 @@ export default function AdminView({ user }) {
 
   const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [acceptedFeedback, setAcceptedFeedback] = useState(new Set());
+  const [acceptingFeedbackId, setAcceptingFeedbackId] = useState(null);
 
   const showNotification = (message) => {
     setNotification(message);
     setTimeout(() => setNotification(null), 3200);
+  };
+
+  const handleAcceptFeedback = async (feedbackItem) => {
+    // Prevent double-click
+    if (acceptingFeedbackId === feedbackItem.id || acceptedFeedback.has(feedbackItem.id)) {
+      return;
+    }
+
+    setAcceptingFeedbackId(feedbackItem.id);
+
+    try {
+      // Send email via backend
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/feedback/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          email: feedbackItem.email,
+          name: feedbackItem.name,
+          subject: feedbackItem.subject
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process feedback');
+      }
+
+      const data = await response.json();
+
+      // Mark as accepted in local state
+      setAcceptedFeedback(prev => new Set([...prev, feedbackItem.id]));
+      
+      // Notify parent component about acceptance (to update history)
+      if (onAcceptFeedback) {
+        onAcceptFeedback({
+          ...feedbackItem,
+          accepted: true,
+          acceptedAt: new Date().toLocaleString()
+        });
+      }
+      
+      // Show success notification
+      showNotification(`✓ Email отправлен на ${feedbackItem.email}!`);
+      
+      // If there's a preview URL, log it for user
+      if (data.previewUrl) {
+        console.log('📧 Email preview:', data.previewUrl);
+      }
+    } catch (error) {
+      console.error('Error accepting feedback:', error);
+      showNotification(`❌ Ошибка: ${error.message}`);
+    } finally {
+      setAcceptingFeedbackId(null);
+    }
   };
 
   const openConfirmDialog = (config) => setConfirmDialog({ ...config });
@@ -440,6 +500,16 @@ export default function AdminView({ user }) {
             >
               Проекты
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('feedback')}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition flex items-center gap-1 ${
+                activeTab === 'feedback' ? 'bg-white text-sky-600 border border-sky-600' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              <Mail size={16} />
+              Обратная связь
+            </button>
           </div>
         </div>
 
@@ -650,6 +720,52 @@ export default function AdminView({ user }) {
                 </div>
               </Card>
             ))}
+          </div>
+        )}
+
+        {activeTab === 'feedback' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900">Обратная связь ({feedback.filter(f => !acceptedFeedback.has(f.id)).length})</h2>
+            {feedback.filter(f => !acceptedFeedback.has(f.id)).length === 0 ? (
+              <Card className="text-center py-8">
+                <Mail size={40} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-gray-500">Нет сообщений</p>
+              </Card>
+            ) : (
+              feedback.filter(f => !acceptedFeedback.has(f.id)).map((item) => (
+                <Card key={item.id} className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">{item.subject}</h3>
+                        <p className="text-xs text-gray-500">{item.createdAt}</p>
+                      </div>
+                      <button
+                        onClick={() => handleAcceptFeedback(item)}
+                        disabled={acceptingFeedbackId === item.id || acceptedFeedback.has(item.id)}
+                        className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-medium transition ${
+                          acceptedFeedback.has(item.id)
+                            ? 'bg-green-100 text-green-700 cursor-default'
+                            : acceptingFeedbackId === item.id
+                            ? 'bg-sky-500 text-white opacity-75 cursor-wait'
+                            : 'bg-sky-600 text-white hover:bg-sky-700'
+                        }`}
+                      >
+                        <Check size={16} />
+                        {acceptedFeedback.has(item.id) ? 'Принято' : 'Принять'}
+                      </button>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <p className="text-sm text-gray-700">{item.message}</p>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between text-xs text-gray-500">
+                      <span><strong>От:</strong> {item.name}</span>
+                      <span><strong>Email:</strong> {item.email}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
           </div>
         )}
       </div>

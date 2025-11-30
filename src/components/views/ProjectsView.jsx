@@ -21,50 +21,69 @@ export default function ProjectsView({ projects, joinedProjectIds = [], onAddPro
       </div>
 
       {hasProjects ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => {
             const isJoined = joinedProjectIds.includes(project.id);
             const needed = Array.isArray(project.needed) ? project.needed : [];
             const neededKeys = Array.isArray(project.neededKeys) ? project.neededKeys : [];
-            const neededDisplay = (neededKeys.length ? neededKeys : needed).map((value) =>
-              neededKeys.length ? t(value) : value
-            );
+
+            const headerStyle = project.backgroundUrl
+              ? {
+                  backgroundImage: `url(${project.backgroundUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }
+              : undefined;
 
             return (
-              <Card key={project.id} className="border-l-4 border-l-sky-500">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-lg text-gray-900 truncate pr-2">
+              <Card key={project.id} className="hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
+                <div
+                  className="h-32 rounded-t-lg -mx-6 -mt-6 relative mb-4 flex-shrink-0"
+                  style={headerStyle}
+                >
+                  {!project.backgroundUrl && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-sky-400 to-sky-600" />
+                  )}
+                </div>
+
+                <div className="flex flex-col flex-grow">
+                  <h3 className="font-bold text-lg text-gray-900 line-clamp-2 mb-1">
                     {project.titleKey ? t(project.titleKey) : project.title}
                   </h3>
-                  <Badge color="bg-green-100 text-green-700">
-                    {t(`projects.statuses.${project.status}`) !== `projects.statuses.${project.status}`
-                      ? t(`projects.statuses.${project.status}`)
-                      : project.status}
-                  </Badge>
-                </div>
-                <div className="mt-4 space-y-2">
-                  <div className="text-sm text-gray-600">
-                    <span className="font-semibold">{t('projects.labels.author')}</span> {project.author}
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <Badge color="bg-green-100 text-green-700" className="text-xs flex-shrink-0">
+                      {t(`projects.statuses.${project.status}`) !== `projects.statuses.${project.status}`
+                        ? t(`projects.statuses.${project.status}`)
+                        : project.status}
+                    </Badge>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-semibold">{t('projects.labels.needed')}</span>
-                    <div className="flex flex-wrap gap-2 mt-1">
+
+                  <div className="text-xs text-gray-600 mb-2">
+                    <span className="font-semibold">{t('projects.labels.author')}:</span> {project.author}
+                  </div>
+
+                  <div className="text-xs text-gray-600 mb-3">
+                    <span className="font-semibold">{t('projects.labels.needed')}:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {needed.map((role, idx) => (
-                        <span key={`${role}-${idx}`} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs border">
+                        <span key={`${role}-${idx}`} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">
                           {neededKeys[idx] ? t(neededKeys[idx]) : role}
                         </span>
                       ))}
                     </div>
-                    <div className="mt-2 text-xs text-gray-500">{neededDisplay.join(', ')}</div>
                   </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between gap-4">
-                  <button className="text-sky-600 text-sm font-medium hover:underline">{t('projects.details')}</button>
+
+                  {project.description && (
+                    <div className="text-sm text-gray-700 mb-3 line-clamp-2">
+                      <span className="font-semibold">Описание:</span> {project.description}
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => { if (!isJoined) onJoinProject(project.id); }}
                     disabled={isJoined}
-                    className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition ${isJoined ? 'bg-slate-300 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700'}`}
+                    className={`w-full px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition flex-shrink-0 ${isJoined ? 'bg-slate-300 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700'}`}
                   >
                     {isJoined ? t('projects.labels.team') : t('projects.join_button')}
                   </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Home, Users, Briefcase, Activity, Calendar, Shield, Users2 } from 'lucide-react';
+import { LogOut, Home, Users, Briefcase, Activity, Calendar, Shield, Users2, HelpCircle } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import HomeView from './components/views/HomeView';
@@ -9,6 +9,7 @@ import ActivityView from './components/views/ActivityView';
 import ScheduleView from './components/views/ScheduleView';
 import AdminView from './components/views/AdminView';
 import ParliamentView from './components/views/ParliamentView';
+import SupportView from './components/views/SupportView';
 import ClubDetailsModal from './components/common/ClubDetailsModal';
 import LoginView from './components/auth/LoginView';
 import Modal from './components/common/Modal';
@@ -25,11 +26,13 @@ const NAV_TABS = [
   { key: 'activity', labelKey: 'sidebar.activity', path: '/activity', icon: Activity },
   { key: 'schedule', labelKey: 'sidebar.schedule', path: '/schedule', icon: Calendar },
   { key: 'parliament', labelKey: 'sidebar.parliament', path: '/parliament', icon: Users2 },
-  { key: 'admin', labelKey: 'sidebar.admin', path: '/admin', icon: Shield }
+  { key: 'admin', labelKey: 'sidebar.admin', path: '/admin', icon: Shield },
+  { key: 'support', labelKey: 'sidebar.support', path: '/support', icon: HelpCircle }
 ];
 
 const determineTabKey = (pathname) => {
   if (pathname.startsWith('/admin')) return 'admin';
+  if (pathname.startsWith('/support')) return 'support';
   if (pathname.startsWith('/parliament')) return 'parliament';
   if (pathname.startsWith('/schedule')) return 'schedule';
   if (pathname.startsWith('/activity')) return 'activity';
@@ -49,6 +52,7 @@ export default function App() {
   const [clubs, setClubs] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [feedback, setFeedback] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null);
   const [formData, setFormData] = useState({});
@@ -58,6 +62,7 @@ export default function App() {
   const [clubDetailsError, setClubDetailsError] = useState('');
   const [isClubModalOpen, setIsClubModalOpen] = useState(false);
   const [selectedClub, setSelectedClub] = useState(null);
+  const [isSubmittingModal, setIsSubmittingModal] = useState(false);
   const [language, setLanguage] = useState(() => {
     if (typeof window === 'undefined') return 'ru';
     const saved = localStorage.getItem('language');
@@ -245,8 +250,14 @@ export default function App() {
 
   const handleLeaveClub = async (clubId) => {
     try {
+      console.log('handleLeaveClub called with clubId:', clubId);
       const updatedUser = await clubsService.leave(clubId);
+      console.log('updatedUser.joinedClubs:', updatedUser.joinedClubs);
       setUser(updatedUser);
+      // Reload clubs to update member count
+      const updatedClubs = await clubsService.getAll();
+      console.log('updatedClubs:', updatedClubs);
+      setClubs(updatedClubs);
       addNotification('Вы покинули клуб.', 'success');
     } catch (error) {
       console.error('Failed to leave club:', error);
@@ -293,8 +304,11 @@ export default function App() {
   };
 
   const handleModalSubmit = async () => {
+    if (isSubmittingModal) return; // Prevent double submission
+    
     let clubPayload;
     try {
+      setIsSubmittingModal(true);
       if (modalType === 'club') {
         const { name, category, description, color } = formData;
         const backgroundType = formData.clubBackground ? 'image' : 'color';
@@ -306,16 +320,46 @@ export default function App() {
           youtube: t('clubs.form.youtube_label'),
           website: t('clubs.form.website_label')
         };
+
+        // Validation: required fields
+        if (!name.trim()) {
+          addNotification('Введите название клуба', 'error');
+          setIsSubmittingModal(false);
+          return;
+        }
+        if (!description.trim()) {
+          addNotification('Введите описание клуба', 'error');
+          setIsSubmittingModal(false);
+          return;
+        }
+        if (!formData.clubBackground) {
+          addNotification('Загрузите фон клуба', 'error');
+          setIsSubmittingModal(false);
+          return;
+        }
+        if (!formData.clubAvatar) {
+          addNotification('Загрузите аватарку клуба', 'error');
+          setIsSubmittingModal(false);
+          return;
+        }
+
+        // Check at least one social link
+        const hasSocialLink = Object.values(socialLinks).some(v => v && v.trim());
+        if (!hasSocialLink) {
+          addNotification('Добавьте хотя бы одну ссылку на соцсеть', 'error');
+          setIsSubmittingModal(false);
+          return;
+        }
+
+        // Validation: URLs
         const invalidEntry = Object.entries(socialLinks).find(([, value]) => value && !isValidUrl(value));
         if (invalidEntry) {
           const [key] = invalidEntry;
           addNotification(`${t('clubs.form.invalid_url')} ${socialLabelMap[key] || key}`, 'error');
+          setIsSubmittingModal(false);
           return;
         }
-        if (!name.trim()) {
-          addNotification('Введите название клуба', 'error');
-          return;
-        }
+
         const preparedLinks = Object.fromEntries(
           Object.entries(socialLinks).map(([key, value]) => [key, normalizeUrl(value)])
         );
@@ -325,6 +369,7 @@ export default function App() {
           description,
           color: color || 'bg-sky-600',
           backgroundUrl: formData.clubBackground || '',
+          clubAvatar: formData.clubAvatar || '',
           backgroundType,
           ...preparedLinks
         };
@@ -336,6 +381,8 @@ export default function App() {
         const newClub = await clubsService.create(payload);
         setClubs(prev => [...prev, newClub]);
         addNotification('Клуб создан успешно!', 'success');
+        setModalOpen(false);
+        setFormData({});
       } else if (modalType === 'project') {
         const { title, status, needed } = formData;
         if (!title.trim()) {
@@ -345,6 +392,7 @@ export default function App() {
         const neededArray = needed ? needed.split(',').map(s => s.trim()).filter(s => s) : [];
         const projectPayload = {
           title,
+          description: formData.description || '',
           status: status || 'developing',
           author: user?.name || 'Студент',
           needed: neededArray,
@@ -353,13 +401,15 @@ export default function App() {
         const newProject = await projectsService.create(projectPayload);
         setProjects(prev => [...prev, newProject]);
         addNotification('Проект создан успешно!', 'success');
+        setModalOpen(false);
+        setFormData({});
       }
-      setModalOpen(false);
-      setFormData({});
     } catch (error) {
       const message = error?.message || 'Ошибка при создании клуба';
       console.error('Failed to create club:', { payload: clubPayload }, error);
       addNotification(message, 'error');
+    } finally {
+      setIsSubmittingModal(false);
     }
   };
 
@@ -373,6 +423,25 @@ export default function App() {
 
   const removeNotification = (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleSubmitFeedback = (feedbackData) => {
+    const newFeedback = {
+      id: Date.now(),
+      ...feedbackData,
+      createdAt: new Date().toLocaleString(),
+      accepted: false
+    };
+    setFeedback(prev => [newFeedback, ...prev]);
+  };
+
+  const handleAcceptFeedback = (acceptedFeedbackData) => {
+    // Update the feedback item to mark as accepted
+    setFeedback(prev => prev.map(f => 
+      f.id === acceptedFeedbackData.id 
+        ? { ...f, accepted: true, acceptedAt: acceptedFeedbackData.acceptedAt }
+        : f
+    ));
   };
 
   const handleCreateProject = handleOpenProjectModal;
@@ -412,6 +481,7 @@ export default function App() {
             schedule={schedule}
             setSchedule={setSchedule}
             projects={projects}
+            feedback={feedback}
             handleLikePost={handleLikePost}
             handleOpenCreateClubModal={handleOpenCreateClubModal}
             onOpenClubModal={handleOpenClubDetailsModal}
@@ -424,6 +494,8 @@ export default function App() {
             handleDeleteProject={handleDeleteProject}
             handleEditClub={handleEditClub}
             handleEditProject={handleEditProject}
+            handleSubmitFeedback={handleSubmitFeedback}
+            handleAcceptFeedback={handleAcceptFeedback}
             toggleLanguage={toggleLanguage}
             language={language}
             handleLogout={handleLogout}
@@ -435,6 +507,7 @@ export default function App() {
           onClose={() => setModalOpen(false)}
           onSubmit={handleModalSubmit}
           primaryLabel={modalType === 'club' ? 'Создать клуб' : 'Создать проект'}
+          primaryDisabled={isSubmittingModal}
         >
         {modalType === 'club' ? (
           <div className="space-y-4">
@@ -661,6 +734,9 @@ export default function App() {
                 <h3 className="font-bold text-gray-900">{formData.title || 'Название проекта'}</h3>
                 <p className="text-sm text-gray-600 mt-1"><span className="font-semibold">Статус:</span> {formData.status || 'developing'}</p>
                 <p className="text-sm text-gray-600"><span className="font-semibold">Автор:</span> {user?.name || 'Студент'}</p>
+                {formData.description && (
+                  <p className="text-sm text-gray-600 mt-1"><span className="font-semibold">Описание:</span> {formData.description}</p>
+                )}
                 {formData.needed && (
                   <p className="text-sm text-gray-600 mt-1"><span className="font-semibold">Ищем:</span> {formData.needed}</p>
                 )}
@@ -724,6 +800,9 @@ function AppLayout({
   toggleLanguage,
   language,
   handleLogout,
+  feedback,
+  handleSubmitFeedback,
+  handleAcceptFeedback,
 }) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -864,8 +943,9 @@ function AppLayout({
             <Route path="/parliament" element={<ParliamentView user={user} />} />
             <Route
               path="/admin"
-              element={user?.isAdmin ? <AdminView user={user} /> : <div className="text-center text-gray-500">{t('common.access_denied')}</div>}
+              element={user?.isAdmin ? <AdminView user={user} feedback={feedback} onAcceptFeedback={handleAcceptFeedback} /> : <div className="text-center text-gray-500">{t('common.access_denied')}</div>}
             />
+            <Route path="/support" element={<SupportView onSubmitFeedback={handleSubmitFeedback} user={user} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

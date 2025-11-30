@@ -37,9 +37,9 @@ export const INITIAL_CLUBS = [
 ];
 
 export const INITIAL_PROJECTS = [
-  { id: 1, title: "Умная теплица", titleKey: 'projects.title.smart_greenhouse', status: "developing", needed: ["Frontend", "Biologist"], neededKeys: ['roles.frontend','roles.biologist'], author: "Иван К." },
-  { id: 2, title: "College Hub App", titleKey: 'projects.title.college_hub_app', status: "mvp", needed: ["Marketing"], neededKeys: ['roles.marketing'], author: "Мария Л." },
-  { id: 3, title: "Короткометражный фильм", titleKey: 'projects.title.short_film', status: "script", needed: ["Actor", "Editor"], neededKeys: ['roles.actor','roles.editor'], author: "Киноклуб" },
+  { id: 1, title: "Умная теплица", titleKey: 'projects.title.smart_greenhouse', description: "Система автоматизации климата для теплиц на базе IoT", status: "developing", needed: ["Frontend", "Biologist"], neededKeys: ['roles.frontend','roles.biologist'], author: "Иван К." },
+  { id: 2, title: "College Hub App", titleKey: 'projects.title.college_hub_app', description: "Мобильное приложение для управления студенческой жизнью", status: "mvp", needed: ["Marketing"], neededKeys: ['roles.marketing'], author: "Мария Л." },
+  { id: 3, title: "Короткометражный фильм", titleKey: 'projects.title.short_film', description: "Документальный фильм о студенческой жизни колледжа", status: "script", needed: ["Actor", "Editor"], neededKeys: ['roles.actor','roles.editor'], author: "Киноклуб" },
 ];
 
 export const INITIAL_SCHEDULE = [

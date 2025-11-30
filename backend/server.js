@@ -1,14 +1,56 @@
 /* eslint-disable no-undef */
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Email configuration using Gmail with app password
+// Note: Use environment variables in production
+const hasGmailConfig = process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD;
+
+let emailTransporter = null;
+
+if (hasGmailConfig) {
+  emailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD
+    }
+  });
+
+  // Don't verify - just try to send and handle errors
+  console.log('Email transporter configured (credentials will be validated on first use)');
+} else {
+  // Use Ethereal for testing - automatically creates test account
+  nodemailer.createTestAccount((err, testAccount) => {
+    if (err) {
+      console.log('Could not create Ethereal test account:', err.message);
+      console.log('Email will be logged to console only.');
+    } else {
+      emailTransporter = nodemailer.createTransport({
+        host: testAccount.smtp.host,
+        port: testAccount.smtp.port,
+        secure: testAccount.smtp.secure,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass
+        }
+      });
+
+      console.log('📧 Test email account created');
+      console.log('   View emails at:', testAccount.web);
+    }
+  });
+}
 
 // Global error handlers
 process.on('uncaughtException', (err) => {
@@ -251,8 +293,13 @@ function initializeDatabase() {
       author TEXT NOT NULL,
       clubId INTEGER,
       backgroundUrl TEXT,
+      description TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+    )`, (err) => {
+      if (err) console.error('Error creating projects table:', err);
+      // Ensure description column exists for old databases
+      ensureColumnExists('projects', 'description', 'TEXT');
+    });
 
     // Schedule table
     db.run(`CREATE TABLE IF NOT EXISTS schedule (
@@ -307,8 +354,10 @@ function initializeDatabase() {
     ensureColumnExists('clubs', 'website', 'TEXT');
     ensureColumnExists('clubs', 'backgroundUrl', 'TEXT');
     ensureColumnExists('clubs', 'backgroundType', "TEXT DEFAULT 'color'");
+    ensureColumnExists('clubs', 'clubAvatar', 'TEXT');
     ensureColumnExists('projects', 'clubId', 'INTEGER');
     ensureColumnExists('projects', 'backgroundUrl', 'TEXT');
+    ensureColumnExists('projects', 'description', 'TEXT');
     ensureColumnExists('parliament', 'position', 'TEXT');
     ensureColumnExists('parliament', 'description', 'TEXT');
     ensureColumnExists('parliament', 'avatarUrl', 'TEXT');
@@ -848,7 +897,8 @@ app.post('/api/clubs', authenticateToken, (req, res) => {
     website,
     photos,
     backgroundUrl,
-    backgroundType
+    backgroundType,
+    clubAvatar
   } = req.body;
   const creatorId = req.user.id;
   const creatorName = req.user?.name || 'Админ';
@@ -869,7 +919,8 @@ app.post('/api/clubs', authenticateToken, (req, res) => {
     creatorName,
     photos: photoList,
     backgroundUrl: backgroundUrl || '',
-    backgroundType: finalBackgroundType
+    backgroundType: finalBackgroundType,
+    clubAvatar: clubAvatar || ''
   };
   const requiredFields = ['name', 'category', 'description'];
   const missingFields = requiredFields.filter((field) => !payload[field]?.trim());
@@ -893,7 +944,8 @@ app.post('/api/clubs', authenticateToken, (req, res) => {
     'creatorName',
     'photos',
     'backgroundUrl',
-    'backgroundType'
+    'backgroundType',
+    'clubAvatar'
   ];
   const columnValues = [
     payload.name,
@@ -911,7 +963,8 @@ app.post('/api/clubs', authenticateToken, (req, res) => {
     payload.creatorName,
     payload.photos,
     payload.backgroundUrl,
-    payload.backgroundType
+    payload.backgroundType,
+    payload.clubAvatar
   ];
   if (clubColumns.length !== columnValues.length) {
     console.error('Club insert column/value length mismatch', clubColumns.length, columnValues.length);
@@ -1020,9 +1073,11 @@ app.post('/api/clubs/:id/join', authenticateToken, async (req, res) => {
 // Leave club
 app.delete('/api/clubs/:id/leave', authenticateToken, (req, res) => {
   const clubId = parseInt(req.params.id);
+  console.log(`Leave club: clubId=${clubId}, req.params.id=${req.params.id}`);
 
-  db.get('SELECT joinedClubs FROM users WHERE id = ?', [req.user.id], (err, user) => {
+  db.get('SELECT * FROM users WHERE id = ?', [req.user.id], (err, user) => {
     if (err) return res.status(500).json({ error: 'Database error' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     let joinedClubs = JSON.parse(user.joinedClubs || '[]');
     joinedClubs = joinedClubs.filter(id => id !== clubId);
@@ -1033,7 +1088,17 @@ app.delete('/api/clubs/:id/leave', authenticateToken, (req, res) => {
       db.run('DELETE FROM club_memberships WHERE clubId = ? AND userId = ?', [clubId, req.user.id]);
 
       db.run('UPDATE clubs SET members = MAX(0, members - 1) WHERE id = ?', [clubId]);
-      res.json({ success: true, joinedClubs });
+
+      res.json({
+        id: user.id,
+        studentId: user.studentId,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar,
+        isAdmin: user.isAdmin === 1,
+        joinedClubs: joinedClubs,
+        joinedProjects: JSON.parse(user.joinedProjects || '[]')
+      });
     });
   });
 });
@@ -1255,11 +1320,11 @@ app.get('/api/projects', authenticateToken, (req, res) => {
 
 // Create project
 app.post('/api/projects', authenticateToken, (req, res) => {
-  const { title, status, needed, author, clubId, backgroundUrl } = req.body;
+  const { title, status, needed, author, clubId, backgroundUrl, description } = req.body;
 
-  db.run(`INSERT INTO projects (title, status, needed, author, clubId, backgroundUrl)
-          VALUES (?, ?, ?, ?, ?, ?)`,
-    [title, status, JSON.stringify(needed || []), author, clubId || null, backgroundUrl || ''],
+  db.run(`INSERT INTO projects (title, status, needed, author, clubId, backgroundUrl, description)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [title, status, JSON.stringify(needed || []), author, clubId || null, backgroundUrl || '', description || ''],
     function(err) {
       if (err) return res.status(500).json({ error: 'Failed to create project' });
 
@@ -1472,6 +1537,84 @@ app.get('/api/activities', authenticateToken, (req, res) => {
       }
       res.json(rows);
     });
+});
+
+// Feedback accept endpoint - sends email to user
+app.post('/api/feedback/accept', authenticateToken, requireAdmin, async (req, res) => {
+  const { email, name, subject } = req.body;
+
+  try {
+    // Email content
+    const emailContent = {
+      from: '"College Hub Support" <noreply@collegehub.com>',
+      to: email,
+      subject: `✓ Ваше обращение принято - ${subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; font-size: 24px;">✓ Спасибо!</h2>
+          </div>
+          
+          <p>Здравствуйте, <strong>${name}</strong>!</p>
+          
+          <p>Ваше обращение с темой <strong>"${subject}"</strong> успешно принято нашей командой.</p>
+          
+          <div style="background: #f0f9ff; border-left: 4px solid #0284c7; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <p style="margin: 0; color: #0284c7;">
+              <strong>Статус:</strong> В обработке
+            </p>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
+              Мы проанализируем ваше сообщение и свяжемся с вами в ближайшее время.
+            </p>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; margin-top: 20px;">
+            Если вы хотите добавить информацию к вашему обращению, просто ответьте на это письмо.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          
+          <p style="color: #999; font-size: 12px; text-align: center;">
+            College Hub Support Team<br>
+            © 2025 College Hub. Все права защищены.
+          </p>
+        </div>
+      `
+    };
+
+    // Send email if transporter is available
+    if (emailTransporter) {
+      const info = await emailTransporter.sendMail(emailContent);
+      console.log('✅ Email sent successfully!');
+      console.log('   To:', email);
+      console.log('   Subject:', emailContent.subject);
+      
+      // If using Ethereal test account, show the preview URL
+      if (process.env.NODE_ENV !== 'production' && !hasGmailConfig) {
+        const testUrl = nodemailer.getTestMessageUrl(info);
+        if (testUrl) {
+          console.log('   📧 Preview URL:', testUrl);
+          res.json({ 
+            success: true, 
+            message: 'Email sent successfully',
+            previewUrl: testUrl 
+          });
+          return;
+        }
+      }
+      
+      res.json({ success: true, message: 'Email sent successfully' });
+    } else {
+      // Fallback if transporter not ready yet
+      console.log('📧 [DEV MODE] Email would be sent to:', email);
+      console.log('   Subject:', emailContent.subject);
+      console.log('   To:', name);
+      res.json({ success: true, message: 'Feedback received (email not sent - transporter not ready)' });
+    }
+  } catch (err) {
+    console.error('Failed to process feedback:', err);
+    res.status(500).json({ error: 'Failed to process feedback: ' + err.message });
+  }
 });
 
 // Global error handler

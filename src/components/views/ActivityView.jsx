@@ -71,7 +71,7 @@ const SectionCard = ({
             type="button"
             onClick={(event) => {
               event.stopPropagation();
-              onLeave(item);
+              onLeave(item.id);
             }}
             className="text-xs px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 transition"
           >
@@ -165,9 +165,7 @@ export default function ActivityView({
   );
 
   const [myClubs, setMyClubs] = useState(createdClubs);
-  const [joinedClubsState, setJoinedClubsState] = useState(joinedOnlyClubs);
   const [myProjects, setMyProjects] = useState(createdProjects);
-  const [joinedProjectsState, setJoinedProjectsState] = useState(joinedOnlyProjects);
   const [activeMembers, setActiveMembers] = useState({ id: null, names: [], sectionId: null });
   const [selectedProject, setSelectedProject] = useState(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -177,16 +175,8 @@ export default function ActivityView({
   }, [createdClubs]);
 
   useEffect(() => {
-    setJoinedClubsState(joinedOnlyClubs);
-  }, [joinedOnlyClubs]);
-
-  useEffect(() => {
     setMyProjects(createdProjects);
   }, [createdProjects]);
-
-  useEffect(() => {
-    setJoinedProjectsState(joinedOnlyProjects);
-  }, [joinedOnlyProjects]);
 
   const handleShowMembers = (sectionId, item) => {
     setActiveMembers((prev) => {
@@ -198,7 +188,6 @@ export default function ActivityView({
   };
 
   const handleDelete = (item, setter, callback) => {
-    setter((prev) => prev.filter((value) => value.id !== item.id));
     callback(item.id);
   };
 
@@ -230,21 +219,20 @@ export default function ActivityView({
       showParticipants: true,
       emptyLabel: t('activity.no_created_clubs'),
       deleteHandler: (item) => handleDelete(item, setMyClubs, onDeleteClub),
-      editHandler: onEditClub,
-      leaveHandler: onLeaveClub
+      editHandler: onEditClub
     },
     {
       id: 'joinedClubs',
       title: t('activity.joined_clubs_title'),
       icon: <Award size={18} className="text-sky-500" />,
-      items: joinedClubsState,
+      items: joinedOnlyClubs,
       actions: { leave: true },
       showEdit: false,
       showJoin: false,
       showParticipants: false,
       showDelete: false,
       emptyLabel: t('activity.no_joined_clubs'),
-      deleteHandler: (item) => handleDelete(item, setJoinedClubsState, onLeaveClub),
+      deleteHandler: (item) => handleDelete(item, null, onLeaveClub),
       leaveHandler: onLeaveClub
     },
     {
@@ -264,19 +252,18 @@ export default function ActivityView({
       id: 'joinedProjects',
       title: t('activity.joined_projects_title'),
       icon: <UserCheck size={18} className="text-purple-500" />,
-      items: joinedProjectsState,
+      items: joinedOnlyProjects,
       actions: { leave: false },
       showEdit: false,
       showJoin: false,
       showParticipants: false,
       emptyLabel: t('activity.no_joined_projects'),
-      deleteHandler: (item) => handleDelete(item, setJoinedProjectsState, onDeleteProject),
-      leaveHandler: onLeaveClub,
+      deleteHandler: (item) => handleDelete(item, null, onDeleteProject),
       joinHandler: onJoinProject
     }
   ];
 
-  const totalItems = myClubs.length + joinedClubsState.length + myProjects.length + joinedProjectsState.length;
+  const totalItems = myClubs.length + joinedOnlyClubs.length + myProjects.length + joinedOnlyProjects.length;
 
   return (
     <div className="space-y-6">
