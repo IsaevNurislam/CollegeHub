@@ -22,11 +22,11 @@ export const authService = {
   },
 
   async getMe() {
-    return apiClient.get('/user/me');
+    return apiClient.get('/api/user/me');
   },
 
   async updateProfile(data) {
-    return apiClient.put('/user/profile', data);
+    return apiClient.put('/api/user/profile', data);
   },
 };
 
