@@ -33,21 +33,27 @@ export default function ClubsView({ clubs, onCreateClub, joinedClubs = [], onJoi
               <Card
                 key={club.id}
                 onClick={() => onViewClub?.(club)}
-                className="hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                className="hover:shadow-lg transition-all duration-300 group cursor-pointer relative overflow-visible"
               >
                 <div
-                  className="h-24 rounded-t-lg -mx-6 -mt-6 relative mb-4 overflow-hidden"
+                  className="h-24 rounded-t-lg -mx-6 -mt-6 relative mb-6 overflow-hidden"
                   style={headerStyle}
                 >
                   {!club.backgroundUrl && (
                     <div className={`${club.color} absolute inset-0`} />
                   )}
-                  <div className="absolute -bottom-6 left-6 w-12 h-12 bg-white rounded-full p-1 shadow-md">
-                    <div className={`w-full h-full rounded-full ${club.color} opacity-80 flex items-center justify-center text-white font-bold`}>
+                </div>
+                {club.clubAvatar ? (
+                  <div className="absolute top-16 left-6 h-14 w-14 rounded-full border-3 border-white overflow-hidden shadow-lg">
+                    <img src={club.clubAvatar} alt={club.name} className="h-full w-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="absolute top-16 left-6 w-14 h-14 bg-white rounded-full p-1 shadow-lg">
+                    <div className={`w-full h-full rounded-full ${club.color} opacity-80 flex items-center justify-center text-white font-bold text-lg`}>
                       {club.name[0]}
                     </div>
                   </div>
-                </div>
+                )}
                 <div className="pt-2">
                   <div className="flex justify-between items-start">
                     <div className="min-w-0 pr-2">
