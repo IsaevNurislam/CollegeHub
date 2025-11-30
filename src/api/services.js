@@ -33,111 +33,111 @@ export const authService = {
 // News
 export const newsService = {
   async getAll() {
-    return apiClient.get('/news');
+    return apiClient.get('/api/news');
   },
 
   async create(post) {
-    return apiClient.post('/news', post);
+    return apiClient.post('/api/news', post);
   },
 
   async like(postId) {
-    return apiClient.post(`/news/${postId}/like`);
+    return apiClient.post(`/api/news/${postId}/like`);
   },
 
   async getComments(newsId) {
-    return apiClient.get(`/news/${newsId}/comments`);
+    return apiClient.get(`/api/news/${newsId}/comments`);
   },
 
   async addComment(newsId, text) {
-    return apiClient.post(`/news/${newsId}/comments`, { text });
+    return apiClient.post(`/api/news/${newsId}/comments`, { text });
   },
 
   async updateComment(newsId, commentId, text) {
-    return apiClient.put(`/news/${newsId}/comments/${commentId}`, { text });
+    return apiClient.put(`/api/news/${newsId}/comments/${commentId}`, { text });
   },
 
   async deleteComment(newsId, commentId) {
-    return apiClient.delete(`/news/${newsId}/comments/${commentId}`);
+    return apiClient.delete(`/api/news/${newsId}/comments/${commentId}`);
   },
 
   async delete(newsId) {
-    return apiClient.delete(`/news/${newsId}`);
+    return apiClient.delete(`/api/news/${newsId}`);
   },
 };
 
 // Clubs
 export const clubsService = {
   async getAll() {
-    return apiClient.get('/clubs');
+    return apiClient.get('/api/clubs');
   },
 
   async create(club) {
-    return apiClient.post('/clubs', club);
+    return apiClient.post('/api/clubs', club);
   },
 
   async join(clubId) {
-    return apiClient.post(`/clubs/${clubId}/join`);
+    return apiClient.post(`/api/clubs/${clubId}/join`);
   },
 
   async leave(clubId) {
-    return apiClient.delete(`/clubs/${clubId}/leave`);
+    return apiClient.delete(`/api/clubs/${clubId}/leave`);
   },
 
   async delete(clubId) {
-    return apiClient.delete(`/clubs/${clubId}`);
+    return apiClient.delete(`/api/clubs/${clubId}`);
   },
 
   async getById(clubId) {
-    return apiClient.get(`/clubs/${clubId}`);
+    return apiClient.get(`/api/clubs/${clubId}`);
   },
 
   async getMembers(clubId) {
-    return apiClient.get(`/clubs/${clubId}/members`);
+    return apiClient.get(`/api/clubs/${clubId}/members`);
   },
 
   async removeMember(clubId, memberId) {
-    return apiClient.delete(`/clubs/${clubId}/members/${memberId}`);
+    return apiClient.delete(`/api/clubs/${clubId}/members/${memberId}`);
   }
 };
 
 // Projects
 export const projectsService = {
   async getAll() {
-    return apiClient.get('/projects');
+    return apiClient.get('/api/projects');
   },
 
   async create(project) {
-    return apiClient.post('/projects', project);
+    return apiClient.post('/api/projects', project);
   },
 
   async delete(projectId) {
-    return apiClient.delete(`/projects/${projectId}`);
+    return apiClient.delete(`/api/projects/${projectId}`);
   },
 };
 
 // Schedule
 export const scheduleService = {
   async getAll() {
-    return apiClient.get('/schedule');
+    return apiClient.get('/api/schedule');
   },
 
   async create(meeting) {
-    return apiClient.post('/schedule', meeting);
+    return apiClient.post('/api/schedule', meeting);
   },
 
   async update(id, meeting) {
-    return apiClient.put(`/schedule/${id}`, meeting);
+    return apiClient.put(`/api/schedule/${id}`, meeting);
   },
 
   async delete(id) {
-    return apiClient.delete(`/schedule/${id}`);
+    return apiClient.delete(`/api/schedule/${id}`);
   },
 };
 
 // Activities
 export const activitiesService = {
   async getAll() {
-    return apiClient.get('/activities');
+    return apiClient.get('/api/activities');
   },
 };
 
@@ -149,6 +149,6 @@ export const parliamentService = {
   updateMember: updateParliamentMember,
   deleteMember: removeParliamentMember,
   async updateAvatar(id, avatarUrl) {
-    return apiClient.put(`/parliament/${id}/avatar`, { avatarUrl });
+    return apiClient.put(`/api/parliament/${id}/avatar`, { avatarUrl });
   }
 };
