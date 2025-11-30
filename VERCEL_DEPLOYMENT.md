@@ -61,17 +61,26 @@
 
 ## Переменные окружения
 
-```env
-# Frontend (.env.production)
-VITE_API_URL=https://your-backend-url.com
+### Frontend (Vercel Project Settings → Environment Variables)
 
-# Backend (.env)
-NODE_ENV=production
-GMAIL_USER=your-email@gmail.com
-GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-DATABASE_URL=file://./db.sqlite (для SQLite)
-PORT=3000
 ```
+VITE_API_URL = https://your-backend-url.vercel.app
+```
+
+### Backend (Vercel Project Settings → Environment Variables)
+
+```
+GMAIL_USER = your-email@gmail.com
+GMAIL_APP_PASSWORD = xxxx xxxx xxxx xxxx
+NODE_ENV = production
+PORT = 3000
+```
+
+**Как получить Gmail App Password:**
+1. Перейти на https://myaccount.google.com/apppasswords
+2. Выбрать "Mail" и "Windows Computer" (или другое)
+3. Скопировать 16-значный пароль
+4. Вставить в `GMAIL_APP_PASSWORD` (с пробелами как есть)
 
 ---
 
