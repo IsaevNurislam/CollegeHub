@@ -1,0 +1,17 @@
+{
+  "buildCommand": "echo 'Backend build complete'",
+  "outputDirectory": ".",
+  "functions": {
+    "server.js": {
+      "memory": 1024,
+      "maxDuration": 60,
+      "runtime": "nodejs20.x"
+    }
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "GMAIL_USER": "@gmail_user",
+    "GMAIL_APP_PASSWORD": "@gmail_app_password",
+    "JWT_SECRET": "@jwt_secret"
+  }
+}

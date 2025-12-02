@@ -6,7 +6,9 @@ import { useTranslation } from '../../i18n';
 
 export default function ClubsView({ clubs, onCreateClub, joinedClubs = [], onJoinClub, onViewClub }) {
   const { t } = useTranslation();
+  console.log('[ClubsView] Received props:', { clubs, joinedClubs });
   const availableClubs = (clubs || []).filter((club) => !joinedClubs.includes(club.id));
+  console.log('[ClubsView] Filtered availableClubs:', availableClubs);
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

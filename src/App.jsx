@@ -95,6 +95,7 @@ export default function App() {
           scheduleService.getAll(),
           projectsService.getAll()
         ]);
+        console.log('[App] Loaded clubs data:', clubsData);
         setNewsFeed(newsData);
         setClubs(clubsData);
         setSchedule(scheduleData);
