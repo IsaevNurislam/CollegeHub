@@ -13,6 +13,7 @@ import SupportView from './components/views/SupportView';
 import ClubDetailsModal from './components/common/ClubDetailsModal';
 import LoginView from './components/auth/LoginView';
 import Modal from './components/common/Modal';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Notification from './components/common/Notification';
 import IsLoading from './components/common/IsLoading';
 import SidebarItem from './components/layout/SidebarItem';
@@ -981,7 +982,15 @@ function AppLayout({
             <Route path="/parliament" element={<ParliamentView user={user} />} />
             <Route
               path="/admin"
-              element={user?.isAdmin ? <AdminView user={user} feedback={feedback} onAcceptFeedback={handleAcceptFeedback} /> : <div className="text-center text-gray-500">{t('common.access_denied')}</div>}
+              element={
+                <ProtectedRoute
+                  isLoading={loading}
+                  isAuthenticated={isAuthenticated}
+                  user={user}
+                  requiredRole="admin"
+                  element={<AdminView user={user} feedback={feedback} onAcceptFeedback={handleAcceptFeedback} />}
+                />
+              }
             />
             <Route path="/support" element={<SupportView onSubmitFeedback={handleSubmitFeedback} user={user} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
