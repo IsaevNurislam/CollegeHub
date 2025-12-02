@@ -1,5 +1,6 @@
 // Vercel API Route for file upload
 // File: api/upload.js
+/* global process */
 
 import formidable from 'formidable';
 import { v2 as cloudinary } from 'cloudinary';

@@ -13,7 +13,6 @@ import SupportView from './components/views/SupportView';
 import ClubDetailsModal from './components/common/ClubDetailsModal';
 import LoginView from './components/auth/LoginView';
 import Modal from './components/common/Modal';
-import ProtectedRoute from './components/common/ProtectedRoute';
 import Notification from './components/common/Notification';
 import IsLoading from './components/common/IsLoading';
 import SidebarItem from './components/layout/SidebarItem';
@@ -511,6 +510,8 @@ export default function App() {
       <Router>
           <AppLayout
             user={user}
+            loading={loading}
+            isAuthenticated={isAuthenticated}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             sidebarOpen={sidebarOpen}
@@ -815,6 +816,8 @@ export default function App() {
 
 function AppLayout({
   user,
+  loading,
+  isAuthenticated,
   searchQuery,
   setSearchQuery,
   sidebarOpen,
@@ -983,13 +986,20 @@ function AppLayout({
             <Route
               path="/admin"
               element={
-                <ProtectedRoute
-                  isLoading={loading}
-                  isAuthenticated={isAuthenticated}
-                  user={user}
-                  requiredRole="admin"
-                  element={<AdminView user={user} feedback={feedback} onAcceptFeedback={handleAcceptFeedback} />}
-                />
+                loading ? (
+                  <div className="flex items-center justify-center h-screen">
+                    <div className="text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
+                      <p className="mt-2 text-gray-500">Загрузка...</p>
+                    </div>
+                  </div>
+                ) : !isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : !user?.isAdmin ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <AdminView user={user} feedback={feedback} onAcceptFeedback={handleAcceptFeedback} />
+                )
               }
             />
             <Route path="/support" element={<SupportView onSubmitFeedback={handleSubmitFeedback} user={user} />} />
