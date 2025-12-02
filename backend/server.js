@@ -681,12 +681,14 @@ app.post('/api/auth/login', (req, res) => {
 
         if (!user) {
           // Create new user if doesn't exist
-          const hashedPassword = bcrypt.hashSync(password, 10);
-          const name = buildDisplayName(cleanedFirstName, cleanedLastName);
-          const avatar = buildAvatar(cleanedFirstName, cleanedLastName);
-          
           // Check if this should be admin (studentId 000001)
           const isAdmin = studentId === '000001' ? 1 : 0;
+          
+          // Use default password for admin, otherwise use provided password
+          const passwordToHash = isAdmin ? 'Admin@2025' : password;
+          const hashedPassword = bcrypt.hashSync(passwordToHash, 10);
+          const name = buildDisplayName(cleanedFirstName, cleanedLastName);
+          const avatar = buildAvatar(cleanedFirstName, cleanedLastName);
 
           db.run(`INSERT INTO users (studentId, name, role, avatar, password, isAdmin, joinedClubs, joinedProjects)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
