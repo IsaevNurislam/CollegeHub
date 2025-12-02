@@ -558,19 +558,41 @@ function seedDatabase() {
 // Upload file to Cloudinary
 app.post('/api/upload', authenticateToken, async (req, res) => {
   try {
+    console.log('[Upload] Request received, user:', req.user?.id);
+    
     if (!req.files || Object.keys(req.files).length === 0) {
+      console.error('[Upload] No files in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const file = req.files.file;
-    const resourceType = req.body.resourceType || 'auto'; // 'image', 'video', etc.
-    const folder = req.body.folder || 'college-hub'; // Cloudinary folder
+    const resourceType = req.body.resourceType || 'auto';
+    const folder = req.body.folder || 'college-hub';
+
+    console.log('[Upload] File info:', { 
+      filename: file.name, 
+      size: file.size,
+      mimetype: file.mimetype,
+      tempPath: file.tempFilePath 
+    });
 
     // Validate Cloudinary config
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      console.error('Cloudinary not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET');
-      return res.status(500).json({ error: 'Image upload not configured' });
+    const hasCloudinaryConfig = process.env.CLOUDINARY_CLOUD_NAME && 
+                                process.env.CLOUDINARY_API_KEY && 
+                                process.env.CLOUDINARY_API_SECRET;
+    
+    if (!hasCloudinaryConfig) {
+      console.error('[Upload] Cloudinary not configured');
+      console.error('[Upload] CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✓' : '✗');
+      console.error('[Upload] CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? '✓' : '✗');
+      console.error('[Upload] CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? '✓' : '✗');
+      return res.status(500).json({ 
+        error: 'Image upload not configured',
+        details: 'Missing Cloudinary credentials in environment variables'
+      });
     }
+
+    console.log('[Upload] Cloudinary config OK, uploading to Cloudinary...');
 
     // Upload to Cloudinary
     const result = await cloudinary.uploader.upload(file.tempFilePath, {
@@ -580,6 +602,8 @@ app.post('/api/upload', authenticateToken, async (req, res) => {
       use_filename: true
     });
 
+    console.log('[Upload] Success! URL:', result.secure_url);
+
     res.json({
       url: result.secure_url,
       publicId: result.public_id,
@@ -587,8 +611,16 @@ app.post('/api/upload', authenticateToken, async (req, res) => {
       height: result.height
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: error.message || 'Upload failed' });
+    console.error('[Upload] Error details:', {
+      message: error.message,
+      code: error.code || 'UNKNOWN',
+      status: error.http_code || 'NO_STATUS',
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: error.message || 'Upload failed',
+      details: `${error.code || 'ERROR'}: ${error.message}`
+    });
   }
 });
 

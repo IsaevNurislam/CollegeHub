@@ -391,7 +391,12 @@ export default function App() {
           }
         } catch (uploadError) {
           console.error('Failed to upload images to Cloudinary:', uploadError);
-          addNotification('Ошибка при загрузке изображений. Попробуйте снова.', 'error');
+          const errorMessage = uploadError?.message || 'Неизвестная ошибка';
+          const errorDetails = uploadError?.response?.error || uploadError?.details || '';
+          const fullMessage = errorDetails 
+            ? `Ошибка загрузки: ${errorMessage} (${errorDetails})`
+            : `Ошибка при загрузке изображений: ${errorMessage}`;
+          addNotification(fullMessage, 'error');
           setIsSubmittingModal(false);
           return;
         }
