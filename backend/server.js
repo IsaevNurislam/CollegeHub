@@ -684,10 +684,13 @@ app.post('/api/auth/login', (req, res) => {
           const hashedPassword = bcrypt.hashSync(password, 10);
           const name = buildDisplayName(cleanedFirstName, cleanedLastName);
           const avatar = buildAvatar(cleanedFirstName, cleanedLastName);
+          
+          // Check if this should be admin (studentId 000001)
+          const isAdmin = studentId === '000001' ? 1 : 0;
 
-          db.run(`INSERT INTO users (studentId, name, role, avatar, password, joinedClubs, joinedProjects)
-                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [studentId, name, 'Студент, 2 курс', avatar, hashedPassword, '[]', '[]'],
+          db.run(`INSERT INTO users (studentId, name, role, avatar, password, isAdmin, joinedClubs, joinedProjects)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [studentId, name, isAdmin ? 'Администратор' : 'Студент, 2 курс', avatar, hashedPassword, isAdmin, '[]', '[]'],
             function(err) {
               try {
                 if (err) {
@@ -701,8 +704,9 @@ app.post('/api/auth/login', (req, res) => {
                     id: this.lastID,
                     studentId,
                     name,
-                    role: 'Студент, 2 курс',
+                    role: isAdmin ? 'Администратор' : 'Студент, 2 курс',
                     avatar,
+                    isAdmin: isAdmin === 1,
                     joinedClubs: [],
                     joinedProjects: []
                   }
