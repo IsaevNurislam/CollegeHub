@@ -4,7 +4,6 @@
   "framework": "vite",
   "cleanUrls": true,
   "trailingSlash": false,
-  "nodejs": "20.x",
   "env": {
     "VITE_API_URL": "@vite_api_url",
     "NODE_ENV": "production"
