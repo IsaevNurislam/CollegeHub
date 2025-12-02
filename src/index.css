@@ -1,7 +1,7 @@
+/* stylelint-disable at-rule-no-unknown, property-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* stylelint-disable at-rule-no-unknown */
 
 :root {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
