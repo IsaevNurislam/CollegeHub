@@ -111,6 +111,8 @@ class ApiClient {
         body: formData,
       });
 
+      console.log('[ApiClient] Upload response status:', response.status, response.statusText);
+
       if (!response.ok) {
         if (response.status === 401) {
           this.clearToken();
@@ -118,21 +120,34 @@ class ApiClient {
         }
         
         let errorMsg = `Upload failed: ${response.statusText}`;
+        let errorDetails = '';
+        
         try {
-          const errorData = await response.json();
-          errorMsg = errorData.error || errorData.details || errorMsg;
-        } catch {
-          // If response is not JSON, use statusText
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            const errorData = await response.json();
+            console.error('[ApiClient] Backend error response:', errorData);
+            errorMsg = errorData.error || errorData.message || errorMsg;
+            errorDetails = errorData.details || '';
+          } else {
+            const text = await response.text();
+            console.error('[ApiClient] Backend error text:', text);
+            errorMsg = text || errorMsg;
+          }
+        } catch (parseError) {
+          console.error('[ApiClient] Error parsing response:', parseError);
         }
         
-        throw new Error(errorMsg);
+        const fullError = errorDetails ? `${errorMsg} (${errorDetails})` : errorMsg;
+        console.error('[ApiClient] Full error:', fullError);
+        throw new Error(fullError);
       }
 
       const result = await response.json();
       console.log('[ApiClient] Upload success:', result);
       return result;
     } catch (error) {
-      console.error('[ApiClient] Upload error:', error);
+      console.error('[ApiClient] Upload error:', error.message);
       throw error;
     }
   }
