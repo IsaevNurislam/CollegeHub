@@ -2,7 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "cleanUrls": true,
+  "cleanUrls": false,
   "trailingSlash": false,
   "env": {
     "VITE_API_URL": "https://backend-college-hub.vercel.app",
@@ -32,6 +32,10 @@
     {
       "source": "/api/(.*)",
       "destination": "https://backend-college-hub.vercel.app/api/$1"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
     },
     {
       "source": "/(.*)",
