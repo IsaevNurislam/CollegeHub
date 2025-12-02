@@ -5,7 +5,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "env": {
-    "VITE_API_URL": "@vite_api_url",
+    "VITE_API_URL": "https://backend-college-hub.vercel.app",
     "NODE_ENV": "production"
   },
   "headers": [
