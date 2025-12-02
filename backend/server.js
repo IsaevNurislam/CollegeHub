@@ -102,8 +102,8 @@ app.use(express.urlencoded({ extended: true, limit: jsonLimit }));
 // File upload middleware
 app.use(fileUpload({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
-  useTempFiles: true,
-  tempFileDir: '/tmp/'
+  useTempFiles: false, // Don't use temp files - use memory for Vercel
+  abortOnLimit: true
 }));
 
 // Database connection
@@ -572,8 +572,7 @@ app.post('/api/upload', authenticateToken, async (req, res) => {
     console.log('[Upload] File info:', { 
       filename: file.name, 
       size: file.size,
-      mimetype: file.mimetype,
-      tempPath: file.tempFilePath 
+      mimetype: file.mimetype
     });
 
     // Validate Cloudinary config
@@ -592,34 +591,49 @@ app.post('/api/upload', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log('[Upload] Cloudinary config OK, uploading to Cloudinary...');
+    console.log('[Upload] Cloudinary config OK, uploading file...');
 
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      resource_type: resourceType,
-      folder: folder,
-      overwrite: false,
-      use_filename: true
-    });
+    // Upload directly from buffer to Cloudinary (works on Vercel serverless)
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: resourceType,
+            folder: folder,
+            overwrite: false,
+            use_filename: true
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
 
-    console.log('[Upload] Success! URL:', result.secure_url);
+        // End the stream with file data
+        uploadStream.end(file.data);
+      });
 
-    res.json({
-      url: result.secure_url,
-      publicId: result.public_id,
-      width: result.width,
-      height: result.height
-    });
+      console.log('[Upload] Success! URL:', result.secure_url);
+
+      res.json({
+        url: result.secure_url,
+        publicId: result.public_id,
+        width: result.width,
+        height: result.height
+      });
+    } catch (cloudinaryError) {
+      console.error('[Upload] Cloudinary error:', cloudinaryError.message);
+      throw cloudinaryError;
+    }
   } catch (error) {
     console.error('[Upload] Error details:', {
       message: error.message,
       code: error.code || 'UNKNOWN',
-      status: error.http_code || 'NO_STATUS',
-      stack: error.stack
+      status: error.http_code || 'NO_STATUS'
     });
     res.status(500).json({ 
       error: error.message || 'Upload failed',
-      details: `${error.code || 'ERROR'}: ${error.message}`
+      details: error.message
     });
   }
 });

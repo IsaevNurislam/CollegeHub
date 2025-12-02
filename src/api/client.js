@@ -101,6 +101,8 @@ class ApiClient {
     });
 
     try {
+      console.log('[ApiClient] Upload file:', { endpoint, filename: file.name, size: file.size });
+      
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: 'POST',
         headers: {
@@ -112,11 +114,23 @@ class ApiClient {
       if (!response.ok) {
         if (response.status === 401) {
           this.clearToken();
+          throw new Error('Unauthorized - please login again');
         }
-        throw new Error(`Upload failed: ${response.statusText}`);
+        
+        let errorMsg = `Upload failed: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorData.details || errorMsg;
+        } catch {
+          // If response is not JSON, use statusText
+        }
+        
+        throw new Error(errorMsg);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('[ApiClient] Upload success:', result);
+      return result;
     } catch (error) {
       console.error('[ApiClient] Upload error:', error);
       throw error;
