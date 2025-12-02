@@ -34,7 +34,7 @@
       "destination": "https://backend-college-hub.vercel.app/api/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/(?!api/)(?!assets/).*",
       "destination": "/index.html"
     }
   ]
