@@ -7,10 +7,19 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const fileUpload = require('express-fileupload');
+const cloudinary = require('cloudinary').v2;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Email configuration using Gmail with app password
 // Note: Use environment variables in production
@@ -89,6 +98,13 @@ app.options('*', cors());
 const jsonLimit = process.env.JSON_LIMIT || '2mb';
 app.use(express.json({ limit: jsonLimit }));
 app.use(express.urlencoded({ extended: true, limit: jsonLimit }));
+
+// File upload middleware
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
 
 // Database connection
 const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) => {
@@ -533,6 +549,45 @@ function seedDatabase() {
       });
   });
 }
+
+// ============= UPLOAD ROUTES =============
+
+// Upload file to Cloudinary
+app.post('/api/upload', authenticateToken, async (req, res) => {
+  try {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const file = req.files.file;
+    const resourceType = req.body.resourceType || 'auto'; // 'image', 'video', etc.
+    const folder = req.body.folder || 'college-hub'; // Cloudinary folder
+
+    // Validate Cloudinary config
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Cloudinary not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET');
+      return res.status(500).json({ error: 'Image upload not configured' });
+    }
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(file.tempFilePath, {
+      resource_type: resourceType,
+      folder: folder,
+      overwrite: false,
+      use_filename: true
+    });
+
+    res.json({
+      url: result.secure_url,
+      publicId: result.public_id,
+      width: result.width,
+      height: result.height
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message || 'Upload failed' });
+  }
+});
 
 // ============= AUTH ROUTES =============
 

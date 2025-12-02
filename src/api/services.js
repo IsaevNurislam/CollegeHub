@@ -152,3 +152,20 @@ export const parliamentService = {
     return apiClient.put(`/api/parliament/${id}/avatar`, { avatarUrl });
   }
 };
+
+// File Upload
+export const uploadService = {
+  async uploadImage(file, folder = 'college-hub') {
+    return apiClient.uploadFile('/api/upload', file, {
+      resourceType: 'image',
+      folder: folder
+    });
+  },
+
+  async uploadFile(file, folder = 'college-hub') {
+    return apiClient.uploadFile('/api/upload', file, {
+      resourceType: 'auto',
+      folder: folder
+    });
+  }
+};

@@ -89,6 +89,39 @@ class ApiClient {
   delete(endpoint) {
     return this.request(endpoint, { method: 'DELETE' });
   }
+
+  async uploadFile(endpoint, file, options = {}) {
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Add additional options to FormData
+    Object.keys(options).forEach(key => {
+      formData.append(key, options[key]);
+    });
+
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.clearToken();
+        }
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('[ApiClient] Upload error:', error);
+      throw error;
+    }
+  }
 }
 
 export const apiClient = new ApiClient();
