@@ -301,6 +301,9 @@ function initializeDatabase() {
       creatorId INTEGER,
       creatorName TEXT,
       photos TEXT DEFAULT '[]',
+      backgroundUrl TEXT,
+      backgroundType TEXT DEFAULT 'color',
+      clubAvatar TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
