@@ -558,20 +558,19 @@ function seedDatabase() {
 // Upload file to Cloudinary
 app.post('/api/upload', authenticateToken, async (req, res) => {
   try {
-    console.log('[Upload] Request received, user:', req.user?.id);
+    console.log('[Upload] Request received from user:', req.user?.id);
     
     if (!req.files || Object.keys(req.files).length === 0) {
-      console.error('[Upload] No files in request');
+      console.error('[Upload] ❌ No files in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const file = req.files.file;
-    const resourceType = req.body.resourceType || 'auto';
-    const folder = req.body.folder || 'college-hub';
+    const folder = req.body.folder || 'Cloudy'; // Default folder as per settings
 
-    console.log('[Upload] File info:', { 
+    console.log('[Upload] 📁 File info:', { 
       filename: file.name, 
-      size: file.size,
+      size: `${(file.size / 1024).toFixed(2)}KB`,
       mimetype: file.mimetype
     });
 
@@ -581,59 +580,68 @@ app.post('/api/upload', authenticateToken, async (req, res) => {
                                 process.env.CLOUDINARY_API_SECRET;
     
     if (!hasCloudinaryConfig) {
-      console.error('[Upload] Cloudinary not configured');
+      console.error('[Upload] ❌ Cloudinary not configured');
       console.error('[Upload] CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✓' : '✗');
       console.error('[Upload] CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? '✓' : '✗');
       console.error('[Upload] CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? '✓' : '✗');
       return res.status(500).json({ 
-        error: 'Image upload not configured',
-        details: 'Missing Cloudinary credentials in environment variables'
+        error: 'Cloudinary upload not configured',
+        details: 'Missing CLOUDINARY_* environment variables on backend'
       });
     }
 
-    console.log('[Upload] Cloudinary config OK, uploading file...');
+    console.log('[Upload] ✓ Cloudinary config OK, uploading...');
 
-    // Upload directly from buffer to Cloudinary (works on Vercel serverless)
-    try {
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: resourceType,
-            folder: folder,
-            overwrite: false,
-            use_filename: true
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
+    // Upload to Cloudinary with exact settings
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: folder,                    // Asset folder: Cloudy
+          overwrite: false,                  // Don't overwrite
+          use_filename: false,               // Don't use filename
+          unique_filename: false,            // Let Cloudinary generate
+          display_name: file.name.split('.')[0], // Use filename as display name (without ext)
+          resource_type: 'auto'              // Auto-detect type
+        },
+        (error, result) => {
+          if (error) {
+            console.error('[Upload] ❌ Cloudinary error:', error.message);
+            reject(error);
+          } else {
+            resolve(result);
           }
-        );
+        }
+      );
 
-        // End the stream with file data
-        uploadStream.end(file.data);
-      });
-
-      console.log('[Upload] Success! URL:', result.secure_url);
-
-      res.json({
-        url: result.secure_url,
-        publicId: result.public_id,
-        width: result.width,
-        height: result.height
-      });
-    } catch (cloudinaryError) {
-      console.error('[Upload] Cloudinary error:', cloudinaryError.message);
-      throw cloudinaryError;
-    }
-  } catch (error) {
-    console.error('[Upload] Error details:', {
-      message: error.message,
-      code: error.code || 'UNKNOWN',
-      status: error.http_code || 'NO_STATUS'
+      // Send file buffer to upload stream
+      uploadStream.end(file.data);
     });
+
+    console.log('[Upload] ✓ Success!');
+    console.log('[Upload] 📸 URL:', result.secure_url);
+    console.log('[Upload] 🆔 Public ID:', result.public_id);
+
+    res.status(200).json({
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id,
+      width: result.width,
+      height: result.height,
+      size: result.bytes,
+      format: result.format
+    });
+
+  } catch (error) {
+    console.error('[Upload] ❌ Error:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.http_code
+    });
+    
     res.status(500).json({ 
-      error: error.message || 'Upload failed',
-      details: error.message
+      error: 'Upload failed',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
