@@ -4,6 +4,9 @@
   "framework": "vite",
   "cleanUrls": true,
   "trailingSlash": false,
+  "env": {
+    "VITE_API_URL": "@vite_api_url"
+  },
   "headers": [
     {
       "source": "/assets/(.*)",
@@ -13,12 +16,26 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://backend-college-hub.vercel.app/api/$1"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
 }
+
