@@ -17,7 +17,7 @@ import Notification from './components/common/Notification';
 import IsLoading from './components/common/IsLoading';
 import SidebarItem from './components/layout/SidebarItem';
 import { I18nProvider, getT, useTranslation } from './i18n';
-import { authService, newsService, clubsService, scheduleService, projectsService } from './api/services';
+import { authService, newsService, clubsService, scheduleService, projectsService, uploadService } from './api/services';
 
 const NAV_TABS = [
   { key: 'home', labelKey: 'sidebar.home', path: '/', icon: Home },
@@ -242,8 +242,14 @@ export default function App() {
   const handleBackgroundUpload = async (field, file) => {
     if (!file) return;
     try {
+      // Store file object for later upload to Cloudinary
+      // For preview, generate DataURL
       const dataUrl = await readFileAsDataUrl(file);
-      setFormData((prev) => ({ ...prev, [field]: dataUrl }));
+      setFormData((prev) => ({ 
+        ...prev, 
+        [`${field}File`]: file,  // Store actual file for upload
+        [field]: dataUrl  // Store DataURL for preview
+      }));
     } catch (error) {
       console.error('Failed to load background image:', error);
     }
@@ -364,13 +370,39 @@ export default function App() {
         const preparedLinks = Object.fromEntries(
           Object.entries(socialLinks).map(([key, value]) => [key, normalizeUrl(value)])
         );
+
+        // Upload files to Cloudinary if they exist
+        let backgroundUrl = formData.clubBackground || '';
+        let clubAvatarUrl = formData.clubAvatar || '';
+
+        try {
+          // Upload background image to Cloudinary
+          if (formData.clubBackgroundFile) {
+            addNotification('Загружаем фон клуба...', 'info');
+            const bgUpload = await uploadService.uploadImage(formData.clubBackgroundFile, 'club-backgrounds');
+            backgroundUrl = bgUpload.url;
+          }
+
+          // Upload club avatar to Cloudinary
+          if (formData.clubAvatarFile) {
+            addNotification('Загружаем аватарку клуба...', 'info');
+            const avatarUpload = await uploadService.uploadImage(formData.clubAvatarFile, 'club-avatars');
+            clubAvatarUrl = avatarUpload.url;
+          }
+        } catch (uploadError) {
+          console.error('Failed to upload images to Cloudinary:', uploadError);
+          addNotification('Ошибка при загрузке изображений. Попробуйте снова.', 'error');
+          setIsSubmittingModal(false);
+          return;
+        }
+
         const payload = {
           name,
           category,
           description,
           color: color || 'bg-sky-600',
-          backgroundUrl: formData.clubBackground || '',
-          clubAvatar: formData.clubAvatar || '',
+          backgroundUrl: backgroundUrl,
+          clubAvatar: clubAvatarUrl,
           backgroundType,
           ...preparedLinks
         };
