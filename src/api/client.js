@@ -1,8 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL?.trim?.() || '/api';
+console.log('[ApiClient Init] VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('[ApiClient Init] Resolved API_BASE_URL:', API_BASE_URL);
 
 class ApiClient {
   constructor() {
     this.baseURL = API_BASE_URL;
+    console.log('[ApiClient] Initialized with baseURL:', this.baseURL);
   }
 
   getToken() {
@@ -62,8 +65,11 @@ class ApiClient {
     }
   }
 
-  get(endpoint) {
-    return this.request(endpoint, { method: 'GET' });
+  async get(endpoint) {
+    console.log('[ApiClient] GET request:', `${this.baseURL}${endpoint}`);
+    const result = await this.request(endpoint, { method: 'GET' });
+    console.log('[ApiClient] GET response:', result);
+    return result;
   }
 
   post(endpoint, data) {

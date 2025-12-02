@@ -12,14 +12,18 @@ dist
 dist-ssr
 *.local
 
-# Environment variables
+# Environment variables - DON'T ignore .env.production for Vercel
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
 
-# Backend (separate repository)
-backend/
-backend_repo/
+# Backend database (only ignore local db, not backend folder)
+backend/database.sqlite
+backend/node_modules
+backend/.env
+backend/.env.local
+backend/dist
 
 # Editor directories and files
 .vscode/*
