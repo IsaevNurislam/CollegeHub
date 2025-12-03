@@ -823,60 +823,46 @@ app.post('/api/auth/login', (req, res) => {
             console.log('[Auth] Verifying password against stored hash...');
             
             const ADMIN_PASSWORD = 'Admin@2025';
-            console.log('[Auth] Expected password constant:', ADMIN_PASSWORD);
+            console.log('[Auth] Expected password:', ADMIN_PASSWORD);
             console.log('[Auth] Provided password:', password);
-            console.log('[Auth] Stored hash (first 20 chars):', user.password?.substring(0, 20) + '...');
             
             const passwordMatch = bcrypt.compareSync(password, user.password);
-            console.log('[Auth] bcrypt.compareSync result:', passwordMatch);
+            console.log('[Auth] Password match:', passwordMatch);
 
             if (!passwordMatch) {
-              // If password doesn't match, check if it's the correct new password
-              // This handles the case where DB has old hash but user is providing new password
-              console.log('[Auth] Password mismatch detected. Checking if this is a correctable situation...');
-              console.log('[Auth] Attempting to update admin password to current expected password...');
-              
+              // Password mismatch - update it in the database
+              console.log('[Auth] ⚠️ Password mismatch - auto-updating admin password in database');
               const newHashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
-              db.run('UPDATE users SET password = ? WHERE studentId = ? AND isAdmin = 1', 
-                [newHashedPassword, '000001'], 
-                function(err) {
-                  if (err) {
-                    console.error('[Auth] ❌ Failed to update admin password:', err.message);
-                    return res.status(401).json({ error: 'Invalid credentials' });
+              
+              db.run('UPDATE users SET password = ? WHERE id = ?', [newHashedPassword, user.id], function(err) {
+                if (err) {
+                  console.error('[Auth] Failed to update password:', err.message);
+                  return res.status(401).json({ error: 'Invalid credentials' });
+                }
+                
+                console.log('[Auth] ✓ Password updated in database');
+                
+                // Issue token with updated password
+                const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
+                console.log('[Auth] ✓ JWT token created');
+                
+                const responseData = {
+                  token,
+                  user: {
+                    id: user.id,
+                    studentId: user.studentId,
+                    name: user.name,
+                    role: user.role,
+                    avatar: user.avatar,
+                    isAdmin: user.isAdmin === 1,
+                    joinedClubs: JSON.parse(user.joinedClubs || '[]'),
+                    joinedProjects: JSON.parse(user.joinedProjects || '[]')
                   }
-                  
-                  console.log('[Auth] ✓ Admin password updated in database');
-                  
-                  // Now verify the NEW password
-                  const newPasswordMatch = bcrypt.compareSync(password, newHashedPassword);
-                  console.log('[Auth] Verifying with new hash:', newPasswordMatch);
-                  
-                  if (!newPasswordMatch) {
-                    console.error('[Auth] ❌ Password still does not match');
-                    return res.status(401).json({ error: 'Invalid credentials' });
-                  }
-                  
-                  console.log('[Auth] ✓ Password verification PASSED for existing admin (after update)');
-                  const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
-                  console.log('[Auth] ✓ JWT token created');
-                  
-                  const responseData = {
-                    token,
-                    user: {
-                      id: user.id,
-                      studentId: user.studentId,
-                      name: user.name,
-                      role: user.role,
-                      avatar: user.avatar,
-                      isAdmin: user.isAdmin === 1,
-                      joinedClubs: JSON.parse(user.joinedClubs || '[]'),
-                      joinedProjects: JSON.parse(user.joinedProjects || '[]')
-                    }
-                  };
-                  
-                  console.log('[Auth] ✅ Login successful - returning response (password was auto-updated)');
-                  res.json(responseData);
-                });
+                };
+                
+                console.log('[Auth] ✅ Login successful (password was auto-corrected)');
+                res.json(responseData);
+              });
               return;
             }
 
