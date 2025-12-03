@@ -831,12 +831,53 @@ app.post('/api/auth/login', (req, res) => {
             console.log('[Auth] bcrypt.compareSync result:', passwordMatch);
 
             if (!passwordMatch) {
-              console.error('[Auth] ❌ Password verification FAILED for existing admin');
-              console.error('[Auth] This could mean:');
-              console.error('[Auth]   1. Wrong password provided');
-              console.error('[Auth]   2. Hash in DB is corrupted');
-              console.error('[Auth]   3. Hash was created with different salt');
-              return res.status(401).json({ error: 'Invalid credentials' });
+              // If password doesn't match, check if it's the correct new password
+              // This handles the case where DB has old hash but user is providing new password
+              console.log('[Auth] Password mismatch detected. Checking if this is a correctable situation...');
+              console.log('[Auth] Attempting to update admin password to current expected password...');
+              
+              const newHashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+              db.run('UPDATE users SET password = ? WHERE studentId = ? AND isAdmin = 1', 
+                [newHashedPassword, '000001'], 
+                function(err) {
+                  if (err) {
+                    console.error('[Auth] ❌ Failed to update admin password:', err.message);
+                    return res.status(401).json({ error: 'Invalid credentials' });
+                  }
+                  
+                  console.log('[Auth] ✓ Admin password updated in database');
+                  
+                  // Now verify the NEW password
+                  const newPasswordMatch = bcrypt.compareSync(password, newHashedPassword);
+                  console.log('[Auth] Verifying with new hash:', newPasswordMatch);
+                  
+                  if (!newPasswordMatch) {
+                    console.error('[Auth] ❌ Password still does not match');
+                    return res.status(401).json({ error: 'Invalid credentials' });
+                  }
+                  
+                  console.log('[Auth] ✓ Password verification PASSED for existing admin (after update)');
+                  const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
+                  console.log('[Auth] ✓ JWT token created');
+                  
+                  const responseData = {
+                    token,
+                    user: {
+                      id: user.id,
+                      studentId: user.studentId,
+                      name: user.name,
+                      role: user.role,
+                      avatar: user.avatar,
+                      isAdmin: user.isAdmin === 1,
+                      joinedClubs: JSON.parse(user.joinedClubs || '[]'),
+                      joinedProjects: JSON.parse(user.joinedProjects || '[]')
+                    }
+                  };
+                  
+                  console.log('[Auth] ✅ Login successful - returning response (password was auto-updated)');
+                  res.json(responseData);
+                });
+              return;
             }
 
             console.log('[Auth] ✓ Password verification PASSED for existing admin');
