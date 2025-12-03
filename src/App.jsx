@@ -113,13 +113,46 @@ export default function App() {
 
   const handleLogin = async (credentials) => {
     try {
+      console.log('[App] Login attempt for studentId:', credentials.studentId);
+      
+      // Clear any previous errors
+      setNotifications(prev => prev.filter(n => n.type !== 'error'));
+      
       const response = await authService.login(credentials);
+      
+      console.log('[App] Login response:', response);
+      
+      // Validate response structure
+      if (!response.token || !response.user) {
+        throw new Error('Invalid server response structure');
+      }
+      
+      // Set user and auth state
       setUser(response.user);
       setIsAuthenticated(true);
+      
+      console.log('[App] ✓ Login successful, user:', response.user.studentId);
+      addNotification(`Добро пожаловать, ${response.user.name}!`, 'success');
+      
+      // Don't manually redirect - let React Router handle it based on auth state
+      // This prevents loop issues where redirect happens before state updates
     } catch (error) {
-      console.error('Login failed:', error);
-      const message = error?.message || 'Ошибка входа. Проверьте данные.';
-      addNotification(message, 'error');
+      console.error('[App] Login failed:', error);
+      
+      // Extract meaningful error message
+      const errorMessage = error?.message || 'Ошибка входа. Проверьте данные.';
+      
+      // Log detailed error for debugging
+      if (errorMessage.includes('401') || errorMessage.includes('Invalid credentials')) {
+        console.warn('[App] Authentication failed - invalid credentials or token');
+      } else if (errorMessage.includes('Network') || errorMessage.includes('fetch')) {
+        console.error('[App] Network error - check if backend is running');
+      }
+      
+      // Show error notification to user
+      addNotification(errorMessage, 'error');
+      
+      // Don't redirect or reload - let user retry
     }
   };
 
