@@ -393,18 +393,48 @@ function initializeDatabase() {
 
 // Seed initial data
 function seedDatabase() {
+  const forceReset = process.env.FORCE_DB_RESET === 'true';
+  
   console.log('Starting seedDatabase...');
+  console.log('FORCE_DB_RESET:', forceReset);
+  
   db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
     if (err) {
       console.error('Error checking users:', err);
       return;
     }
-    if (row && row.count > 0) {
+    
+    if (row && row.count > 0 && !forceReset) {
       console.log('Database already seeded, skipping...');
       return;
     }
     
+    if (forceReset && row && row.count > 0) {
+      console.log('FORCE_DB_RESET is enabled - clearing existing data...');
+      db.serialize(() => {
+        db.run('DELETE FROM news');
+        db.run('DELETE FROM clubs');
+        db.run('DELETE FROM schedule');
+        db.run('DELETE FROM projects');
+        db.run('DELETE FROM parliament');
+        db.run('DELETE FROM users', (err) => {
+          if (err) {
+            console.error('Error clearing users:', err);
+          } else {
+            console.log('All data cleared for fresh seed');
+            seedDatabaseContent();
+          }
+        });
+      });
+      return;
+    }
+    
     console.log('Seeding database with initial data...');
+    seedDatabaseContent();
+  });
+}
+
+function seedDatabaseContent() {
     
     // Create default user (6-digit studentId)
     const hashedPassword = bcrypt.hashSync('123456', 10);
@@ -550,7 +580,6 @@ function seedDatabase() {
           console.log('Database seeded successfully');
         }
       });
-  });
 }
 
 // ============= UPLOAD ROUTES =============
@@ -933,6 +962,38 @@ app.post('/api/auth/login', (req, res) => {
     console.error('[Auth] ❌ Unhandled error in login endpoint:', error.message, error.stack);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Admin reset database endpoint - for fixing Vercel database issues
+app.post('/api/admin/reset-db', (req, res) => {
+  const { adminToken } = req.body;
+  const ADMIN_RESET_TOKEN = process.env.ADMIN_RESET_TOKEN || 'admin-reset-2025';
+  
+  if (!adminToken || adminToken !== ADMIN_RESET_TOKEN) {
+    console.log('[Admin] Reset attempt with invalid token');
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  
+  console.log('[Admin] 🔄 Database reset requested...');
+  
+  db.serialize(() => {
+    db.run('DELETE FROM news');
+    db.run('DELETE FROM clubs');
+    db.run('DELETE FROM schedule');
+    db.run('DELETE FROM projects');
+    db.run('DELETE FROM parliament');
+    db.run('DELETE FROM club_memberships');
+    db.run('DELETE FROM users', (err) => {
+      if (err) {
+        console.error('[Admin] ❌ Error clearing users:', err);
+        return res.status(500).json({ error: 'Failed to clear database' });
+      }
+      
+      console.log('[Admin] ✓ Database cleared');
+      seedDatabaseContent();
+      res.json({ success: true, message: 'Database reset and reseeded successfully' });
+    });
+  });
 });
 
 // Get current user
