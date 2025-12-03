@@ -661,44 +661,127 @@ app.post('/api/auth/login', (req, res) => {
   try {
     const { studentId, password, firstName, lastName } = req.body;
 
+    console.log(`[Auth] Login attempt: studentId=${studentId}`);
+
     const cleanedFirstName = sanitizeNameInput(firstName);
     const cleanedLastName = sanitizeNameInput(lastName);
 
     if (!studentId || !password) {
+      console.warn('[Auth] Missing studentId or password');
       return res.status(400).json({ error: 'Student ID and password required' });
     }
 
     // Validate studentId (exactly 6 digits)
     if (!/^\d{6}$/.test(studentId)) {
+      console.warn(`[Auth] Invalid studentId format: ${studentId}`);
       return res.status(422).json({ error: 'Student ID must be exactly 6 digits' });
     }
 
     db.get('SELECT * FROM users WHERE studentId = ?', [studentId], (err, user) => {
       try {
         if (err) {
+          console.error('[Auth] Database error:', err);
           return res.status(500).json({ error: 'Database error' });
         }
 
-        if (!user) {
-          // Create new user if doesn't exist
-          // Check if this should be admin (studentId 000001)
-          const isAdmin = studentId === '000001' ? 1 : 0;
+        // **ADMIN LOGIN SPECIAL CASE**
+        if (studentId === '000001') {
+          console.log('[Auth] Admin login attempt');
           
-          // Use default password for admin, otherwise use provided password
-          const passwordToHash = isAdmin ? 'Admin@2025' : password;
-          const hashedPassword = bcrypt.hashSync(passwordToHash, 10);
-          const name = buildDisplayName(cleanedFirstName, cleanedLastName);
+          if (!user) {
+            // Create admin user on first login
+            console.log('[Auth] Creating new admin user');
+            const ADMIN_PASSWORD = 'Admin@2025';
+            const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+            const name = buildDisplayName(cleanedFirstName, cleanedLastName) || 'Админ Колледжа';
+            const avatar = buildAvatar(cleanedFirstName, cleanedLastName);
+
+            db.run(`INSERT INTO users (studentId, name, role, avatar, password, isAdmin, joinedClubs, joinedProjects)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [studentId, name, 'Администратор', avatar, hashedPassword, 1, '[]', '[]'],
+              function(err) {
+                try {
+                  if (err) {
+                    console.error('[Auth] Failed to create admin user:', err);
+                    return res.status(500).json({ error: 'Failed to create admin user' });
+                  }
+
+                  console.log('[Auth] Admin user created, ID:', this.lastID);
+                  
+                  // Verify password for newly created admin
+                  if (!bcrypt.compareSync(password, hashedPassword)) {
+                    console.warn('[Auth] Admin password verification failed for new admin');
+                    return res.status(401).json({ error: 'Invalid credentials' });
+                  }
+
+                  console.log('[Auth] ✓ Admin login successful');
+                  const token = jwt.sign({ id: this.lastID, studentId }, JWT_SECRET, { expiresIn: '7d' });
+                  res.json({
+                    token,
+                    user: {
+                      id: this.lastID,
+                      studentId,
+                      name,
+                      role: 'Администратор',
+                      avatar,
+                      isAdmin: true,
+                      joinedClubs: [],
+                      joinedProjects: []
+                    }
+                  });
+                } catch (e) {
+                  console.error('[Auth] Error in admin user creation callback:', e);
+                  res.status(500).json({ error: 'Internal server error' });
+                }
+              });
+          } else {
+            // Existing admin user - verify password against ADMIN_PASSWORD constant
+            console.log('[Auth] Existing admin user found, verifying password');
+            const ADMIN_PASSWORD = 'Admin@2025';
+            
+            if (!bcrypt.compareSync(password, user.password)) {
+              console.warn('[Auth] Admin password verification failed');
+              return res.status(401).json({ error: 'Invalid credentials' });
+            }
+
+            console.log('[Auth] ✓ Existing admin login successful');
+            const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
+            res.json({
+              token,
+              user: {
+                id: user.id,
+                studentId: user.studentId,
+                name: user.name,
+                role: user.role,
+                avatar: user.avatar,
+                isAdmin: user.isAdmin === 1,
+                joinedClubs: JSON.parse(user.joinedClubs || '[]'),
+                joinedProjects: JSON.parse(user.joinedProjects || '[]')
+              }
+            });
+          }
+          return; // Important: exit here for admin
+        }
+
+        // **REGULAR USER LOGIN**
+        if (!user) {
+          // Create new regular user
+          console.log('[Auth] Creating new user:', studentId);
+          const hashedPassword = bcrypt.hashSync(password, 10);
+          const name = buildDisplayName(cleanedFirstName, cleanedLastName) || 'Студент';
           const avatar = buildAvatar(cleanedFirstName, cleanedLastName);
 
           db.run(`INSERT INTO users (studentId, name, role, avatar, password, isAdmin, joinedClubs, joinedProjects)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [studentId, name, isAdmin ? 'Администратор' : 'Студент, 2 курс', avatar, hashedPassword, isAdmin, '[]', '[]'],
+            [studentId, name, 'Студент, 2 курс', avatar, hashedPassword, 0, '[]', '[]'],
             function(err) {
               try {
                 if (err) {
+                  console.error('[Auth] Failed to create user:', err);
                   return res.status(500).json({ error: 'Failed to create user' });
                 }
 
+                console.log('[Auth] ✓ New user created and logged in:', studentId);
                 const token = jwt.sign({ id: this.lastID, studentId }, JWT_SECRET, { expiresIn: '7d' });
                 res.json({
                   token,
@@ -706,24 +789,28 @@ app.post('/api/auth/login', (req, res) => {
                     id: this.lastID,
                     studentId,
                     name,
-                    role: isAdmin ? 'Администратор' : 'Студент, 2 курс',
+                    role: 'Студент, 2 курс',
                     avatar,
-                    isAdmin: isAdmin === 1,
+                    isAdmin: false,
                     joinedClubs: [],
                     joinedProjects: []
                   }
                 });
               } catch (e) {
-                console.error('Error in db.run callback:', e);
+                console.error('[Auth] Error in user creation callback:', e);
                 res.status(500).json({ error: 'Internal server error' });
               }
             });
         } else {
-          // Verify password
+          // Existing user - verify password
+          console.log('[Auth] Verifying existing user password:', studentId);
+          
           if (!bcrypt.compareSync(password, user.password)) {
+            console.warn('[Auth] Password verification failed for user:', studentId);
             return res.status(401).json({ error: 'Invalid credentials' });
           }
 
+          console.log('[Auth] ✓ User login successful:', studentId);
           const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
           res.json({
             token,
@@ -740,12 +827,12 @@ app.post('/api/auth/login', (req, res) => {
           });
         }
       } catch (e) {
-        console.error('Error in db.get callback:', e);
+        console.error('[Auth] Error in db.get callback:', e);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
   } catch (error) {
-    console.error('Error in login endpoint:', error);
+    console.error('[Auth] Error in login endpoint:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

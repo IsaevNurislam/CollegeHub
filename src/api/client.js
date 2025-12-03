@@ -46,10 +46,17 @@ class ApiClient {
       };
 
       if (!response.ok) {
+        // ⚠️ IMPORTANT: Do NOT auto-reload on 401
+        // Let the frontend handle it gracefully
+        // Previously: if (response.status === 401) { this.clearToken(); window.location.reload(); }
+        // This caused: login page → 401 error → reload → blank page → user confused
+        
         if (response.status === 401) {
+          // Clear token but don't reload - let component handle it
+          console.warn('[ApiClient] Unauthorized (401) - token cleared, frontend will handle');
           this.clearToken();
-          window.location.reload();
         }
+        
         const errorBody = parseJson();
         const message = (isJson && errorBody)
           ? errorBody.error || errorBody.message || JSON.stringify(errorBody)
