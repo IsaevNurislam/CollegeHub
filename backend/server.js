@@ -414,7 +414,7 @@ function seedDatabase() {
       (err) => { if (err) console.error('Error inserting user 1:', err); });
 
     // Create admin user (6-digit studentId)
-    const adminPass = bcrypt.hashSync('admin123', 10);
+    const adminPass = bcrypt.hashSync('Admin@2025', 10);
     db.run(`INSERT INTO users (studentId, name, role, isAdmin, avatar, password, joinedClubs, joinedProjects)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       ['000001', 'Админ Колледжа', 'Администратор', 1, 'АК', adminPass, '[]', '[]'],
