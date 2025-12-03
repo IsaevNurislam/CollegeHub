@@ -29,10 +29,22 @@ class ApiClient {
     };
 
     try {
+      console.log('[ApiClient] Sending request...');
+      console.log('[ApiClient] URL:', `${this.baseURL}${endpoint}`);
+      console.log('[ApiClient] Method:', options.method);
+      console.log('[ApiClient] Headers:', {
+        'Content-Type': headers['Content-Type'],
+        'Authorization': headers.Authorization ? '(Bearer token present)' : 'N/A'
+      });
+      
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         ...options,
         headers,
       });
+
+      console.log('[ApiClient] Response received');
+      console.log('[ApiClient] Status:', response.status, response.statusText);
+      console.log('[ApiClient] Headers:', Object.fromEntries(response.headers));
 
       const text = await response.text();
       const isJson = response.headers.get('content-type')?.includes('application/json');
@@ -46,13 +58,11 @@ class ApiClient {
       };
 
       if (!response.ok) {
+        console.warn('[ApiClient] ❌ Response not OK (status:', response.status + ')');
+        
         // ⚠️ IMPORTANT: Do NOT auto-reload on 401
         // Let the frontend handle it gracefully
-        // Previously: if (response.status === 401) { this.clearToken(); window.location.reload(); }
-        // This caused: login page → 401 error → reload → blank page → user confused
-        
         if (response.status === 401) {
-          // Clear token but don't reload - let component handle it
           console.warn('[ApiClient] Unauthorized (401) - token cleared, frontend will handle');
           this.clearToken();
         }
@@ -61,13 +71,24 @@ class ApiClient {
         const message = (isJson && errorBody)
           ? errorBody.error || errorBody.message || JSON.stringify(errorBody)
           : text || `API Error: ${response.statusText}`;
+        
+        console.error('[ApiClient] Error message:', message);
         throw new Error(message);
       }
 
-      if (!text) return null;
-      return isJson ? JSON.parse(text) : text;
+      if (!text) {
+        console.log('[ApiClient] ✓ Empty response (OK)');
+        return null;
+      }
+      
+      const result = isJson ? JSON.parse(text) : text;
+      console.log('[ApiClient] ✓ Response parsed successfully');
+      console.log('[ApiClient] Response data:', result);
+      
+      return result;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('[ApiClient] ❌ Request failed:', error.message);
+      console.error('[ApiClient] Stack:', error.stack);
       throw error;
     }
   }
@@ -80,6 +101,13 @@ class ApiClient {
   }
 
   post(endpoint, data) {
+    console.log('\n[ApiClient] ═══════════════════════════════════════════');
+    console.log('[ApiClient] POST Request:', endpoint);
+    console.log('[ApiClient] Endpoint:', `${this.baseURL}${endpoint}`);
+    console.log('[ApiClient] Request Body:', data);
+    console.log('[ApiClient] Content-Type:', 'application/json');
+    console.log('[ApiClient] ═══════════════════════════════════════════');
+    
     return this.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
