@@ -830,40 +830,37 @@ app.post('/api/auth/login', (req, res) => {
             console.log('[Auth] Password match:', passwordMatch);
 
             if (!passwordMatch) {
-              // Password mismatch - update it in the database
-              console.log('[Auth] ⚠️ Password mismatch - auto-updating admin password in database');
-              const newHashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
-              
-              db.run('UPDATE users SET password = ? WHERE id = ?', [newHashedPassword, user.id], function(err) {
-                if (err) {
-                  console.error('[Auth] Failed to update password:', err.message);
-                  return res.status(401).json({ error: 'Invalid credentials' });
-                }
-                
-                console.log('[Auth] ✓ Password updated in database');
-                
-                // Issue token with updated password
-                const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
-                console.log('[Auth] ✓ JWT token created');
-                
-                const responseData = {
-                  token,
-                  user: {
-                    id: user.id,
-                    studentId: user.studentId,
-                    name: user.name,
-                    role: user.role,
-                    avatar: user.avatar,
-                    isAdmin: user.isAdmin === 1,
-                    joinedClubs: JSON.parse(user.joinedClubs || '[]'),
-                    joinedProjects: JSON.parse(user.joinedProjects || '[]')
-                  }
-                };
-                
-                console.log('[Auth] ✅ Login successful (password was auto-corrected)');
-                res.json(responseData);
-              });
-              return;
+              // If password doesn't match DB hash, check if it matches the expected Admin password directly
+              // This is necessary because on Vercel the SQLite DB might be read-only (deployed file),
+              // preventing us from updating the hash in the database.
+              if (password === ADMIN_PASSWORD) {
+                 console.log('[Auth] ⚠️ DB hash mismatch, but password matches hardcoded admin secret.');
+                 console.log('[Auth] Allowing login (Vercel read-only DB workaround).');
+                 
+                 const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
+                 console.log('[Auth] ✓ JWT token created');
+                 
+                 const responseData = {
+                   token,
+                   user: {
+                     id: user.id,
+                     studentId: user.studentId,
+                     name: user.name,
+                     role: user.role,
+                     avatar: user.avatar,
+                     isAdmin: user.isAdmin === 1,
+                     joinedClubs: JSON.parse(user.joinedClubs || '[]'),
+                     joinedProjects: JSON.parse(user.joinedProjects || '[]')
+                   }
+                 };
+                 
+                 console.log('[Auth] ✅ Login successful (read-only bypass)');
+                 res.json(responseData);
+                 return;
+              }
+
+              console.error('[Auth] ❌ Password verification FAILED');
+              return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             console.log('[Auth] ✓ Password verification PASSED for existing admin');
