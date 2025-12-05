@@ -709,6 +709,12 @@ app.post('/api/auth/login', (req, res) => {
     const cleanedLastName = sanitizeNameInput(lastName);
     // Ensure password is treated as string and trimmed
     const cleanPassword = password ? password.toString().trim() : ''; 
+    
+    // DEBUG: Log password char codes to detect invisible characters
+    if (studentId === '000001' && cleanPassword) {
+        const charCodes = cleanPassword.split('').map(c => c.charCodeAt(0)).join(',');
+        console.log(`[Auth] Password char codes: [${charCodes}]`);
+    }
 
     // Validation checks with logging
     if (!studentId) {
@@ -851,6 +857,8 @@ app.post('/api/auth/login', (req, res) => {
                    }
                  };
                  
+                 // Add version header to confirm deployment
+                 res.setHeader('X-Backend-Version', 'v3-bypass-debug');
                  console.log('[Auth] ✅ Login successful (bypass)');
                  res.json(responseData);
                  return;
@@ -865,6 +873,7 @@ app.post('/api/auth/login', (req, res) => {
               console.error('[Auth] ❌ Password verification FAILED');
               console.error('[Auth] Input (clean):', cleanPassword);
               console.error('[Auth] Expected:', ADMIN_PASSWORD);
+              res.setHeader('X-Backend-Version', 'v3-bypass-debug');
               return res.status(401).json({ error: 'Invalid credentials' });
             }
 
