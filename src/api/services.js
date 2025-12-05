@@ -16,6 +16,12 @@ export const authService = {
       studentId: String(credentials.studentId)
     };
     
+    // DEBUG: Log payload to console to verify data before sending
+    console.log('[AuthService] Login Payload:', {
+      ...payload,
+      password: payload.password ? `[HIDDEN] (len=${payload.password.length})` : 'MISSING'
+    });
+
     const response = await apiClient.post('/api/auth/login', payload);
     if (response.token) {
       apiClient.setToken(response.token);
