@@ -707,9 +707,8 @@ app.post('/api/auth/login', (req, res) => {
 
     const cleanedFirstName = sanitizeNameInput(firstName);
     const cleanedLastName = sanitizeNameInput(lastName);
-    // Ensure password is treated as string and trimmed if needed (though usually we want exact match)
-    // For admin bypass, we might want to be lenient if user accidentally added space
-    const cleanPassword = password ? password.toString() : ''; 
+    // Ensure password is treated as string and trimmed
+    const cleanPassword = password ? password.toString().trim() : ''; 
 
     // Validation checks with logging
     if (!studentId) {
@@ -827,25 +826,16 @@ app.post('/api/auth/login', (req, res) => {
           } else {
             // Existing admin - verify password
             console.log('[Auth] Found existing admin user');
-            console.log('[Auth] Verifying password against stored hash...');
             
             const ADMIN_PASSWORD = 'Admin@2025';
-            console.log('[Auth] Expected password:', ADMIN_PASSWORD);
-            console.log('[Auth] Provided password:', password);
             
-            const passwordMatch = bcrypt.compareSync(password, user.password);
-            console.log('[Auth] Password match:', passwordMatch);
-
-            if (!passwordMatch) {
-              // If password doesn't match DB hash, check if it matches the expected Admin password directly
-              // This is necessary because on Vercel the SQLite DB might be read-only (deployed file),
-              // preventing us from updating the hash in the database.
-              if (password === ADMIN_PASSWORD) {
-                 console.log('[Auth] ⚠️ DB hash mismatch, but password matches hardcoded admin secret.');
-                 console.log('[Auth] Allowing login (Vercel read-only DB workaround).');
+            // 1. FAST BYPASS: Check hardcoded password first (ignoring DB hash issues)
+            // Use cleanPassword to handle potential whitespace issues
+            if (cleanPassword === ADMIN_PASSWORD) {
+                 console.log('[Auth] ⚡ Admin bypass: Password matches hardcoded secret.');
+                 console.log('[Auth] Allowing login immediately.');
                  
                  const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
-                 console.log('[Auth] ✓ JWT token created');
                  
                  const responseData = {
                    token,
@@ -861,19 +851,26 @@ app.post('/api/auth/login', (req, res) => {
                    }
                  };
                  
-                 console.log('[Auth] ✅ Login successful (read-only bypass)');
+                 console.log('[Auth] ✅ Login successful (bypass)');
                  res.json(responseData);
                  return;
-              }
+            }
 
+            // 2. Standard DB Hash Check (Fallback)
+            console.log('[Auth] Verifying password against stored hash...');
+            const passwordMatch = bcrypt.compareSync(password, user.password);
+            console.log('[Auth] Password match:', passwordMatch);
+
+            if (!passwordMatch) {
               console.error('[Auth] ❌ Password verification FAILED');
+              console.error('[Auth] Input (clean):', cleanPassword);
+              console.error('[Auth] Expected:', ADMIN_PASSWORD);
               return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             console.log('[Auth] ✓ Password verification PASSED for existing admin');
             
             const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
-            console.log('[Auth] ✓ JWT token created');
             
             const responseData = {
               token,
