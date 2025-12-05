@@ -1,18 +1,15 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
   "cleanUrls": false,
   "trailingSlash": false,
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "env": {
     "VITE_API_URL": "",
     "NODE_ENV": "production"
   },
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
