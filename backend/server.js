@@ -114,6 +114,7 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
     process.exit(1);
   }
   console.log('Connected to SQLite database');
+  console.log('SERVER VERSION: v5-force-admin-update'); // Version marker
   initializeDatabase();
 });
 
@@ -405,7 +406,18 @@ function seedDatabase() {
     }
     
     if (row && row.count > 0 && !forceReset) {
-      console.log('Database already seeded, skipping...');
+      console.log('Database already seeded.');
+      
+      // FORCE UPDATE ADMIN PASSWORD ON EVERY START
+      // This ensures that even if the DB is stale, the admin password is correct.
+      const ADMIN_PASSWORD = 'Admin@2025';
+      const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+      
+      db.run('UPDATE users SET password = ? WHERE studentId = ?', [hashedPassword, '000001'], (err) => {
+        if (err) console.error('Failed to force-update admin password:', err);
+        else console.log('✓ Admin password force-updated to ensure consistency.');
+      });
+      
       return;
     }
     
