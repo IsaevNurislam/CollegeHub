@@ -843,7 +843,7 @@ app.post('/api/auth/login', (req, res) => {
             );
           } else {
             // Existing admin - verify password
-            console.log('[Auth] Found existing admin user');
+            console.log('[Auth] Found existing admin user (ID 000001)');
             
             const ADMIN_PASSWORD = 'Admin@2025';
             
@@ -851,21 +851,27 @@ app.post('/api/auth/login', (req, res) => {
             // Use cleanPassword to handle potential whitespace issues
             if (cleanPassword === ADMIN_PASSWORD) {
                  console.log('[Auth] ⚡ Admin bypass: Password matches hardcoded secret.');
-                 console.log('[Auth] Allowing login immediately.');
+                 console.log('[Auth] Allowing login immediately with FORCED admin status.');
                  
-                 const token = jwt.sign({ id: user.id, studentId: user.studentId }, JWT_SECRET, { expiresIn: '7d' });
+                 // Fix DB: Update password hash AND ensure admin status
+                 const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+                 db.run('UPDATE users SET password = ?, isAdmin = 1, role = ? WHERE studentId = ?', 
+                   [hashedPassword, 'Администратор', '000001']);
                  
+                 const token = jwt.sign({ id: user.id, studentId: user.studentId, name: 'Админ Колледжа' }, JWT_SECRET, { expiresIn: '7d' });
+                 
+                 // FORCE admin status regardless of DB
                  const responseData = {
                    token,
                    user: {
                      id: user.id,
                      studentId: user.studentId,
-                     name: user.name,
-                     role: user.role,
-                     avatar: user.avatar,
-                     isAdmin: user.isAdmin === 1,
-                     joinedClubs: JSON.parse(user.joinedClubs || '[]'),
-                     joinedProjects: JSON.parse(user.joinedProjects || '[]')
+                     name: 'Админ Колледжа',
+                     role: 'Администратор',
+                     avatar: 'АК',
+                     isAdmin: true, // FORCED TRUE
+                     joinedClubs: [],
+                     joinedProjects: []
                    }
                  };
                  
