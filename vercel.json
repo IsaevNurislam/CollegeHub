@@ -4,6 +4,11 @@
   "framework": "vite",
   "cleanUrls": false,
   "trailingSlash": false,
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "@vercel/node@3"
+    }
+  },
   "env": {
     "VITE_API_URL": "",
     "NODE_ENV": "production"
@@ -39,15 +44,11 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
       "source": "/assets/(.*)",
       "destination": "/assets/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
