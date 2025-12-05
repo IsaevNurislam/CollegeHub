@@ -9,7 +9,14 @@ import {
 // Authentication
 export const authService = {
   async login(credentials) {
-    const response = await apiClient.post('/api/auth/login', credentials);
+    // Ensure studentId is a string (backend expects 6 chars string like "000001")
+    // We do NOT convert to integer because backend validation requires 6 digits
+    const payload = {
+      ...credentials,
+      studentId: String(credentials.studentId)
+    };
+    
+    const response = await apiClient.post('/api/auth/login', payload);
     if (response.token) {
       apiClient.setToken(response.token);
     }

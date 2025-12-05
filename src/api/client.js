@@ -9,11 +9,18 @@ class ApiClient {
   }
 
   getToken() {
-    return localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
+    // Ensure we never return "N/A" or "null" strings as valid tokens
+    if (!token || token === 'N/A' || token === 'null' || token === 'undefined') {
+      return null;
+    }
+    return token;
   }
 
   setToken(token) {
-    localStorage.setItem('authToken', token);
+    if (token) {
+      localStorage.setItem('authToken', token);
+    }
   }
 
   clearToken() {
@@ -24,6 +31,7 @@ class ApiClient {
     const token = this.getToken();
     const headers = {
       'Content-Type': 'application/json',
+      // Only add Authorization if we have a valid token
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     };
