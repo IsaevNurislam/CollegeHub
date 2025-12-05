@@ -42,7 +42,7 @@ class ApiClient {
       console.log('[ApiClient] Method:', options.method);
       console.log('[ApiClient] Headers:', {
         'Content-Type': headers['Content-Type'],
-        'Authorization': headers.Authorization ? '(Bearer token present)' : 'N/A'
+        'Authorization': headers.Authorization ? '(Bearer token present)' : '(NONE - not included in request)'
       });
       
       const response = await fetch(`${this.baseURL}${endpoint}`, {

@@ -9,17 +9,27 @@ import {
 // Authentication
 export const authService = {
   async login(credentials) {
-    // Ensure studentId is a string (backend expects 6 chars string like "000001")
-    // We do NOT convert to integer because backend validation requires 6 digits
+    // Sanitize inputs: strip any accidental prefixes like ": " and trim whitespace
+    const sanitizePassword = (pwd) => {
+      if (!pwd) return '';
+      // Remove leading colons, spaces, or other common copy-paste artifacts
+      return String(pwd).replace(/^[:\s]+/, '').trim();
+    };
+
     const payload = {
-      ...credentials,
-      studentId: String(credentials.studentId)
+      studentId: String(credentials.studentId).trim(),
+      password: sanitizePassword(credentials.password),
+      // Only include names if present
+      ...(credentials.firstName && { firstName: credentials.firstName.trim() }),
+      ...(credentials.lastName && { lastName: credentials.lastName.trim() })
     };
     
     // DEBUG: Log payload to console to verify data before sending
     console.log('[AuthService] Login Payload:', {
-      ...payload,
-      password: payload.password ? `[HIDDEN] (len=${payload.password.length})` : 'MISSING'
+      studentId: payload.studentId,
+      password: payload.password ? `[HIDDEN] (len=${payload.password.length})` : 'MISSING',
+      firstName: payload.firstName || '(not sent)',
+      lastName: payload.lastName || '(not sent)'
     });
 
     const response = await apiClient.post('/api/auth/login', payload);
