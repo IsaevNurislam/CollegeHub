@@ -695,7 +695,11 @@ app.post('/api/auth/login', (req, res) => {
     console.log('[Auth] ║          LOGIN REQUEST RECEIVED             ║');
     console.log('[Auth] ╚════════════════════════════════════════════╝');
     console.log('[Auth] │ studentId:', studentId);
-    console.log('[Auth] │ password provided:', !!password, `(length: ${password?.length || 0})`);
+    // Check for whitespace issues
+    const passwordHasWhitespace = password !== password?.trim();
+    console.log('[Auth] │ password provided:', !!password);
+    console.log('[Auth] │ password length:', password?.length || 0);
+    console.log('[Auth] │ password has whitespace:', passwordHasWhitespace ? 'YES ⚠️' : 'No');
     console.log('[Auth] │ firstName:', firstName);
     console.log('[Auth] │ lastName:', lastName);
     console.log('[Auth] │ Request Body Keys:', Object.keys(req.body));
@@ -703,6 +707,9 @@ app.post('/api/auth/login', (req, res) => {
 
     const cleanedFirstName = sanitizeNameInput(firstName);
     const cleanedLastName = sanitizeNameInput(lastName);
+    // Ensure password is treated as string and trimmed if needed (though usually we want exact match)
+    // For admin bypass, we might want to be lenient if user accidentally added space
+    const cleanPassword = password ? password.toString() : ''; 
 
     // Validation checks with logging
     if (!studentId) {
@@ -710,7 +717,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Student ID required' });
     }
 
-    if (!password) {
+    if (!cleanPassword) {
       console.warn('[Auth] ❌ Missing password');
       return res.status(400).json({ error: 'Password required' });
     }

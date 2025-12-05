@@ -113,13 +113,29 @@ export default function App() {
 
   const handleLogin = async (credentials) => {
     try {
+      // Optimize payload: remove names for admin, trim password
+      const isLoginAdmin = credentials.studentId === '000001';
+      const optimizedCredentials = {
+        studentId: credentials.studentId,
+        password: credentials.password?.trim(),
+        // Only send names if NOT admin (admin is pre-seeded)
+        ...(!isLoginAdmin && { 
+          firstName: credentials.firstName?.trim(), 
+          lastName: credentials.lastName?.trim() 
+        })
+      };
+
       console.log('\n[Login] ╔════════════════════════════════════════════╗');
       console.log('[Login] ║      LOGIN HANDLER - REQUEST START         ║');
       console.log('[Login] ╚════════════════════════════════════════════╝');
-      console.log('[Login] │ studentId:', credentials.studentId);
-      console.log('[Login] │ firstName:', credentials.firstName);
-      console.log('[Login] │ lastName:', credentials.lastName);
-      console.log('[Login] │ password provided:', !!credentials.password, `(length: ${credentials.password?.length})`);
+      console.log('[Login] │ studentId:', optimizedCredentials.studentId);
+      if (!isLoginAdmin) {
+        console.log('[Login] │ firstName:', optimizedCredentials.firstName);
+        console.log('[Login] │ lastName:', optimizedCredentials.lastName);
+      } else {
+        console.log('[Login] │ (Admin login - names omitted from payload)');
+      }
+      console.log('[Login] │ password provided:', !!optimizedCredentials.password, `(length: ${optimizedCredentials.password?.length})`);
       console.log('[Login] │ API Base URL:', import.meta.env.VITE_API_URL);
       console.log('[Login] └────────────────────────────────────────────');
       
@@ -127,7 +143,7 @@ export default function App() {
       setNotifications(prev => prev.filter(n => n.type !== 'error'));
       
       console.log('[Login] Calling authService.login()...');
-      const response = await authService.login(credentials);
+      const response = await authService.login(optimizedCredentials);
       
       console.log('\n[Login] ╔════════════════════════════════════════════╗');
       console.log('[Login] ║      LOGIN RESPONSE RECEIVED                ║');
