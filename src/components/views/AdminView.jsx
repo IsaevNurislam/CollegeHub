@@ -25,13 +25,6 @@ const placeholderStyles = `
   }
 `;
 
-// Helper to convert snake_case keys to camelCase
-const toCamelCase = (member) => ({
-  ...member,
-  groupName: member.group_name || member.groupName || '',
-  avatarUrl: member.avatar_url || member.avatarUrl || member.avatar || '',
-});
-
 // Helper to convert camelCase keys to snake_case for API
 const toSnakeCase = (form) => ({
   name: form.name,
@@ -155,7 +148,7 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
     setLoadingParliament(true);
     try {
       const members = await parliamentService.getAll();
-      setParliamentMembers(members.map(toCamelCase));
+      setParliamentMembers(members);
     } finally {
       setLoadingParliament(false);
     }

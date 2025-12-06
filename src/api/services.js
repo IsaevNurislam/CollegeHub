@@ -235,9 +235,19 @@ export const activitiesService = {
 };
 
 // Parliament
+// Helper to convert parliament member data from snake_case to camelCase
+const normalizeParliamentMember = (member) => ({
+  ...member,
+  groupName: member.group_name || member.groupName || '',
+  avatarUrl: member.avatar_url || member.avatarUrl || member.avatar || '',
+  createdAt: member.created_at || member.createdAt,
+});
 
 export const parliamentService = {
-  getAll: getParliamentMembers,
+  async getAll() {
+    const members = await getParliamentMembers();
+    return members.map(normalizeParliamentMember);
+  },
   addMember: addParliamentMember,
   updateMember: updateParliamentMember,
   deleteMember: removeParliamentMember,
