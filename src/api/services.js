@@ -18,7 +18,8 @@ const isValidName = (value) => {
 const normalizeUser = (user) => {
   if (!user) return user;
   
-  // Debug: log user object structure
+  // Debug: log FULL user object
+  console.log('[normalizeUser] FULL user object:', JSON.stringify(user, null, 2));
   console.log('[normalizeUser] Raw user object keys:', Object.keys(user));
   console.log('[normalizeUser] Raw user data:', {
     firstName: user.firstName,
