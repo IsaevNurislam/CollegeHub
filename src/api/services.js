@@ -18,20 +18,6 @@ const isValidName = (value) => {
 const normalizeUser = (user) => {
   if (!user) return user;
   
-  // Debug: log FULL user object
-  console.log('[normalizeUser] FULL user object:', JSON.stringify(user, null, 2));
-  console.log('[normalizeUser] Raw user object keys:', Object.keys(user));
-  console.log('[normalizeUser] Raw user data:', {
-    firstName: user.firstName,
-    first_name: user.first_name,
-    'profile.first_name': user['profile.first_name'],
-    profile_first_name: user.profile_first_name,
-    lastName: user.lastName,
-    last_name: user.last_name,
-    'profile.last_name': user['profile.last_name'],
-    profile_last_name: user.profile_last_name,
-  });
-  
   // Try to get first name from various sources
   const firstName = [
     user.firstName,
@@ -49,8 +35,6 @@ const normalizeUser = (user) => {
     user.profile?.last_name,
     user['profile.last_name']
   ].find(isValidName) || '';
-  
-  console.log('[normalizeUser] Normalized:', { firstName, lastName });
   
   return {
     ...user,
