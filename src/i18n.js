@@ -2,10 +2,11 @@ import React from 'react';
 
 const translations = {
   ru: {
-    sidebar: { home: 'Главная', clubs: 'Клубы', projects: 'Проекты', activity: 'Моя Активность', parliament: 'Парламент', schedule: 'Встречи', profile: 'Профиль', chat: 'Чат', admin: 'Администрация', support: 'Поддержка' },
+    sidebar: { home: 'Главная', clubs: 'Клубы', projects: 'Проекты', activity: 'Моя Активность', parliament: 'Парламент', schedule: 'Встречи', profile: 'Профиль', chat: 'Чат', dm: 'Личные сообщения', admin: 'Администрация', support: 'Поддержка' },
     search: { placeholder_short: 'Поиск...', placeholder_full: 'Поиск (новости, клубы, проекты)...', results_prefix: 'Результаты поиска по запросу:' },
     auth: { logout_title: 'Выход из аккаунта', logout_message: 'Вы уверены, что хотите выйти из аккаунта?', logout_confirm: 'Выйти', logout_cancel: 'Отмена', passwordLabel: 'Пароль', passwordPlaceholder: 'Введите пароль' },
     notifications: { title: 'Уведомления', clear: 'Очистить', none: 'Нет новых уведомлений', mark: 'Отметить', meeting_reminder: 'Напоминание о встрече' },
+    dm: { title: 'Личные сообщения', subtitle: 'Приватные диалоги', noConversations: 'Нет диалогов', empty: 'Начните диалог', selectChat: 'Выберите диалог или найдите студента', searchPlaceholder: 'Поиск по ID студента...', searchResults: 'Результаты поиска', placeholder: 'Напишите сообщение...' },
     admin: {
       confirm: {
         delete_news_title: 'Удалить новость',
@@ -157,10 +158,11 @@ const translations = {
     grades: { subjects: { math: 'Высшая математика', physics: 'Физика', programming: 'Программирование', history: 'История' } }
   },
   en: {
-    sidebar: { home: 'Home', clubs: 'Clubs', projects: 'Projects', activity: 'Activity', parliament: 'Parliament', schedule: 'Schedule', profile: 'Profile', chat: 'Chat', admin: 'Administration', support: 'Support' },
+    sidebar: { home: 'Home', clubs: 'Clubs', projects: 'Projects', activity: 'Activity', parliament: 'Parliament', schedule: 'Schedule', profile: 'Profile', chat: 'Chat', dm: 'Direct Messages', admin: 'Administration', support: 'Support' },
     search: { placeholder_short: 'Search...', placeholder_full: 'Search (news, clubs, projects)...', results_prefix: 'Search results for:' },
     auth: { logout_title: 'Sign out', logout_message: 'Are you sure you want to sign out?', logout_confirm: 'Sign out', logout_cancel: 'Cancel', passwordLabel: 'Password', passwordPlaceholder: 'Enter password' },
     notifications: { title: 'Notifications', clear: 'Clear', none: 'No new notifications', mark: 'Mark', meeting_reminder: 'Meeting Reminder' },
+    dm: { title: 'Direct Messages', subtitle: 'Private conversations', noConversations: 'No conversations', empty: 'Start a conversation', selectChat: 'Select a conversation or find a student', searchPlaceholder: 'Search by student ID...', searchResults: 'Search results', placeholder: 'Write a message...' },
     admin: {
       confirm: {
         delete_news_title: 'Delete news',

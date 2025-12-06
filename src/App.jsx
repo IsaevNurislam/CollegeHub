@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Home, Users, Briefcase, Activity, Calendar, Shield, Users2, HelpCircle, User, MessageSquare } from 'lucide-react';
+import { LogOut, Home, Users, Briefcase, Activity, Calendar, Shield, Users2, HelpCircle, User, MessageSquare, Mail } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import HomeView from './components/views/HomeView';
@@ -12,6 +12,7 @@ import ParliamentView from './components/views/ParliamentView';
 import SupportView from './components/views/SupportView';
 import ProfileView from './components/views/ProfileView';
 import ChatView from './components/views/ChatView';
+import DirectMessagesView from './components/views/DirectMessagesView';
 import ClubDetailsModal from './components/common/ClubDetailsModal';
 import LoginView from './components/auth/LoginView';
 import Modal from './components/common/Modal';
@@ -29,6 +30,7 @@ const NAV_TABS = [
   { key: 'schedule', labelKey: 'sidebar.schedule', path: '/schedule', icon: Calendar },
   { key: 'parliament', labelKey: 'sidebar.parliament', path: '/parliament', icon: Users2 },
   { key: 'chat', labelKey: 'sidebar.chat', path: '/chat', icon: MessageSquare },
+  { key: 'dm', labelKey: 'sidebar.dm', path: '/dm', icon: Mail },
   { key: 'profile', labelKey: 'sidebar.profile', path: '/profile', icon: User },
   { key: 'admin', labelKey: 'sidebar.admin', path: '/admin', icon: Shield },
   { key: 'support', labelKey: 'sidebar.support', path: '/support', icon: HelpCircle }
@@ -39,6 +41,7 @@ const determineTabKey = (pathname) => {
   if (pathname.startsWith('/support')) return 'support';
   if (pathname.startsWith('/profile')) return 'profile';
   if (pathname.startsWith('/parliament')) return 'parliament';
+  if (pathname.startsWith('/dm')) return 'dm';
   if (pathname.startsWith('/chat')) return 'chat';
   if (pathname.startsWith('/schedule')) return 'schedule';
   if (pathname.startsWith('/activity')) return 'activity';
@@ -69,6 +72,7 @@ export default function App() {
   const [isClubModalOpen, setIsClubModalOpen] = useState(false);
   const [selectedClub, setSelectedClub] = useState(null);
   const [isSubmittingModal, setIsSubmittingModal] = useState(false);
+  const [dmPartner, setDmPartner] = useState(null);
   const [language, setLanguage] = useState(() => {
     if (typeof window === 'undefined') return 'ru';
     const saved = localStorage.getItem('language');
@@ -603,6 +607,8 @@ export default function App() {
             toggleLanguage={toggleLanguage}
             language={language}
             handleLogout={handleLogout}
+            dmPartner={dmPartner}
+            setDmPartner={setDmPartner}
           />
 
         <Modal
@@ -910,6 +916,8 @@ function AppLayout({
   handleSubmitFeedback,
   handleAcceptFeedback,
   handleUpdateProfile,
+  dmPartner,
+  setDmPartner,
 }) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -1048,7 +1056,8 @@ function AppLayout({
             />
             <Route path="/schedule" element={<ScheduleView schedule={schedule} setSchedule={setSchedule} />} />
             <Route path="/parliament" element={<ParliamentView user={user} />} />
-            <Route path="/chat" element={<ChatView user={user} />} />
+            <Route path="/chat" element={<ChatView user={user} onOpenDM={(partner) => { setDmPartner(partner); }} />} />
+            <Route path="/dm" element={<DirectMessagesView user={user} initialPartner={dmPartner} onClearPartner={() => setDmPartner(null)} />} />
             <Route 
               path="/profile" 
               element={<ProfileView user={user} onUpdateUser={handleUpdateProfile} />} 

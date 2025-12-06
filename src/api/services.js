@@ -288,12 +288,52 @@ export const chatService = {
     return Array.isArray(messages) ? messages.map(normalizeChatMessage) : [];
   },
 
-  async sendMessage(text) {
-    const message = await apiClient.post('/api/chat/messages', { text });
+  async sendMessage(text, replyToId = null) {
+    const payload = { text };
+    if (replyToId) payload.replyToId = replyToId;
+    const message = await apiClient.post('/api/chat/messages', payload);
     return normalizeChatMessage(message);
   },
 
   async deleteMessage(messageId) {
     return apiClient.delete(`/api/chat/messages/${messageId}`);
+  },
+};
+
+const normalizeDirectMessage = (message) => ({
+  ...message,
+  createdAt: message.created_at || message.createdAt,
+  senderId: message.sender_id || message.senderId,
+  receiverId: message.receiver_id || message.receiverId,
+});
+
+export const directMessageService = {
+  async getConversations() {
+    const conversations = await apiClient.get('/api/dm/conversations');
+    return Array.isArray(conversations) ? conversations : [];
+  },
+
+  async getMessages(userId) {
+    const messages = await apiClient.get(`/api/dm/messages/${userId}`);
+    return Array.isArray(messages) ? messages.map(normalizeDirectMessage) : [];
+  },
+
+  async sendMessage(receiverId, text) {
+    const message = await apiClient.post('/api/dm/messages', { receiverId, text });
+    return normalizeDirectMessage(message);
+  },
+
+  async markAsRead(conversationId) {
+    return apiClient.put(`/api/dm/conversations/${conversationId}/read`);
+  },
+};
+
+export const usersService = {
+  async searchById(studentId) {
+    return apiClient.get(`/api/users/search?studentId=${studentId}`);
+  },
+
+  async getById(userId) {
+    return apiClient.get(`/api/users/${userId}`);
   },
 };

@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { User, Mail, Briefcase, AlertCircle, Check, Clock } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { User, Mail, Briefcase, AlertCircle, Check, Clock, Camera, Loader2 } from 'lucide-react';
 import { Card } from '../common/UI';
 import { useTranslation } from '../../i18n';
+import { uploadService } from '../../api/services';
 
 // Check if user can edit name (once per week)
 const canEditName = (lastNameChangeDate) => {
@@ -32,6 +33,8 @@ export default function ProfileView({ user, onUpdateUser }) {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef(null);
   const { t } = useTranslation();
 
   const canEdit = useMemo(() => canEditName(user.lastNameChangeDate), [user.lastNameChangeDate]);
@@ -59,6 +62,35 @@ export default function ProfileView({ user, onUpdateUser }) {
   };
 
   const displayName = user.name || `${formData.firstName} ${formData.lastName}`.trim();
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrors({ general: 'Пожалуйста, выберите изображение' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ general: 'Размер файла не должен превышать 5MB' });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setErrors({});
+
+    try {
+      const result = await uploadService.uploadImage(file, 'avatars');
+      await onUpdateUser({ avatarUrl: result.url });
+      setSuccess('Аватар успешно обновлён');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setErrors({ general: error?.message || 'Не удалось загрузить аватар' });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const validateInputs = () => {
     const newErrors = {};
@@ -126,16 +158,35 @@ export default function ProfileView({ user, onUpdateUser }) {
       <Card>
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-2xl overflow-hidden">
-              {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-              ) : (
-                user.avatar || displayName?.[0] || 'U'
-              )}
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-2xl overflow-hidden">
+                {isUploadingAvatar ? (
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                ) : user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  user.avatar || displayName?.[0] || 'U'
+                )}
+              </div>
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <Camera size={24} className="text-white" />
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">{displayName}</h3>
               <p className="text-gray-600">ID: {user.studentId}</p>
+              <p className="text-xs text-gray-400 mt-1">Нажмите на аватар для изменения</p>
             </div>
           </div>
           {canEdit ? (

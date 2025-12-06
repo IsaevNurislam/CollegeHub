@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../common/UI';
 import { useTranslation } from '../../i18n';
-import { MessageSquare, Send, Loader2, Users, RefreshCw } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Users, RefreshCw, Reply, X, Mail } from 'lucide-react';
 import { chatService } from '../../api/services';
 
 const formatTime = (date) => {
@@ -22,15 +23,18 @@ const formatDate = (date) => {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 };
 
-export default function ChatView({ user }) {
+export default function ChatView({ user, onOpenDM }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
   const pollIntervalRef = useRef(null);
+  const inputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,6 +70,29 @@ export default function ChatView({ user }) {
     scrollToBottom();
   }, [messages]);
 
+  const handleReply = (message) => {
+    if (message.isMine) return;
+    setReplyTo(message);
+    inputRef.current?.focus();
+  };
+
+  const cancelReply = () => {
+    setReplyTo(null);
+  };
+
+  const handleAvatarClick = (message) => {
+    if (message.isMine) return;
+    if (onOpenDM && message.userId) {
+      onOpenDM({
+        id: message.userId,
+        name: message.author,
+        avatar: message.avatar,
+        studentId: message.studentId,
+      });
+      navigate('/dm');
+    }
+  };
+
   const sendMessage = async () => {
     const trimmed = draft.trim();
     if (!trimmed || sending) return;
@@ -79,14 +106,16 @@ export default function ChatView({ user }) {
       createdAt: new Date().toISOString(),
       isMine: true,
       pending: true,
+      replyTo: replyTo ? { id: replyTo.id, author: replyTo.author, text: replyTo.text } : null,
     };
 
     setMessages((prev) => [...prev, tempMessage]);
     setDraft('');
+    setReplyTo(null);
     setSending(true);
 
     try {
-      const savedMessage = await chatService.sendMessage(trimmed);
+      const savedMessage = await chatService.sendMessage(trimmed, replyTo?.id);
       setMessages((prev) =>
         prev.map((m) => (m.id === tempId ? { ...savedMessage, isMine: true } : m))
       );
@@ -177,9 +206,17 @@ export default function ChatView({ user }) {
                     >
                       {!message.isMine && (
                         <div className="flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-semibold">
-                            {message.avatar || message.author?.[0] || '?'}
-                          </div>
+                          <button
+                            onClick={() => handleAvatarClick(message)}
+                            className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-semibold hover:ring-2 hover:ring-sky-300 transition cursor-pointer overflow-hidden"
+                            title="Написать личное сообщение"
+                          >
+                            {message.avatar?.startsWith('http') ? (
+                              <img src={message.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              message.avatar || message.author?.[0] || '?'
+                            )}
+                          </button>
                         </div>
                       )}
                       <div
@@ -192,25 +229,51 @@ export default function ChatView({ user }) {
                         }`}
                       >
                         {!message.isMine && (
-                          <div className="text-xs font-semibold text-sky-600 mb-1">
-                            {message.author}
+                          <div className="text-xs font-semibold text-sky-600 mb-1 flex items-center gap-2">
+                            <span>{message.author}</span>
+                            <button
+                              onClick={() => handleAvatarClick(message)}
+                              className="text-slate-400 hover:text-sky-500 transition"
+                              title="Написать личное сообщение"
+                            >
+                              <Mail size={12} />
+                            </button>
+                          </div>
+                        )}
+                        {message.replyTo && (
+                          <div className="mb-2 pl-2 border-l-2 border-sky-300 text-xs opacity-80">
+                            <span className="font-medium">{message.replyTo.author}</span>
+                            <p className="truncate max-w-[200px]">{message.replyTo.text}</p>
                           </div>
                         )}
                         <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
                         <div
-                          className={`text-xs mt-1 flex items-center gap-1 ${
+                          className={`text-xs mt-1 flex items-center gap-2 ${
                             message.isMine ? 'text-sky-200 justify-end' : 'text-slate-400'
                           }`}
                         >
                           {formatTime(message.createdAt)}
                           {message.pending && <Loader2 size={10} className="animate-spin ml-1" />}
                           {message.error && <span className="text-red-500 ml-1">!</span>}
+                          {!message.isMine && !message.pending && (
+                            <button
+                              onClick={() => handleReply(message)}
+                              className="hover:text-sky-500 transition"
+                              title="Ответить"
+                            >
+                              <Reply size={12} />
+                            </button>
+                          )}
                         </div>
                       </div>
                       {message.isMine && (
                         <div className="flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-sky-600 flex items-center justify-center text-white font-semibold">
-                            {user?.avatar || user?.firstName?.[0] || user?.name?.[0] || 'U'}
+                          <div className="w-10 h-10 rounded-full bg-sky-600 flex items-center justify-center text-white font-semibold overflow-hidden">
+                            {user?.avatar?.startsWith('http') ? (
+                              <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              user?.avatar || user?.firstName?.[0] || user?.name?.[0] || 'U'
+                            )}
                           </div>
                         </div>
                       )}
@@ -224,12 +287,30 @@ export default function ChatView({ user }) {
         </div>
 
         <div className="p-4 bg-white border-t border-slate-200">
+          {replyTo && (
+            <div className="mb-3 p-2 bg-sky-50 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <Reply size={16} className="text-sky-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-xs font-medium text-sky-600">{replyTo.author}</span>
+                  <p className="text-xs text-slate-500 truncate">{replyTo.text}</p>
+                </div>
+              </div>
+              <button
+                onClick={cancelReply}
+                className="p-1 hover:bg-sky-100 rounded transition flex-shrink-0"
+              >
+                <X size={14} className="text-slate-400" />
+              </button>
+            </div>
+          )}
           <div className="flex gap-3 items-end">
             <textarea
+              ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={t('chat.placeholder') || 'Напишите сообщение...'}
+              placeholder={replyTo ? `Ответ для ${replyTo.author}...` : (t('chat.placeholder') || 'Напишите сообщение...')}
               rows={1}
               className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
               style={{ minHeight: '48px', maxHeight: '120px' }}
