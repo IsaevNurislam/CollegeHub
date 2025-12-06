@@ -7,12 +7,37 @@ import {
 } from '../fetch/parliamentAPI';
 
 // Normalize user data from snake_case to camelCase
+// Helper to check if value is a valid name (not a placeholder like "profile.first_name")
+const isValidName = (value) => {
+  if (!value || typeof value !== 'string') return false;
+  // Ignore values that look like field names/paths
+  if (value.includes('.') || value.includes('_')) return false;
+  return value.trim().length > 0;
+};
+
 const normalizeUser = (user) => {
   if (!user) return user;
+  
+  // Try to get first name from various sources
+  const firstName = [
+    user.firstName,
+    user.first_name,
+    user.profile?.first_name,
+    user['profile.first_name']
+  ].find(isValidName) || '';
+  
+  // Try to get last name from various sources
+  const lastName = [
+    user.lastName,
+    user.last_name,
+    user.profile?.last_name,
+    user['profile.last_name']
+  ].find(isValidName) || '';
+  
   return {
     ...user,
-    firstName: user.firstName || user.first_name || user.profile?.first_name || user['profile.first_name'] || '',
-    lastName: user.lastName || user.last_name || user.profile?.last_name || user['profile.last_name'] || '',
+    firstName,
+    lastName,
     lastNameChange: user.lastNameChange || user.last_name_change || user.profile?.last_name_change || user['profile.last_name_change'] || null,
     studentId: user.studentId || user.student_id || '',
     isAdmin: user.isAdmin ?? user.is_admin ?? false,
