@@ -41,6 +41,8 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
 
   const [clubs, setClubs] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [deletingClubId, setDeletingClubId] = useState(null);
+  const [deletingProjectId, setDeletingProjectId] = useState(null);
 
   const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -348,6 +350,7 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
       isDangerous: true,
       onConfirm: async () => {
         closeConfirmDialog();
+        setDeletingClubId(clubId);
         try {
           await clubsService.delete(clubId);
           await loadClubs();
@@ -355,6 +358,8 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
         } catch (error) {
           console.error('delete club', error);
           showNotification('Не удалось удалить клуб');
+        } finally {
+          setDeletingClubId(null);
         }
       },
       onCancel: closeConfirmDialog
@@ -370,6 +375,7 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
       isDangerous: true,
       onConfirm: async () => {
         closeConfirmDialog();
+        setDeletingProjectId(projectId);
         try {
           await projectsService.delete(projectId);
           await loadProjects();
@@ -377,6 +383,8 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
         } catch (error) {
           console.error('delete project', error);
           showNotification('Не удалось удалить проект');
+        } finally {
+          setDeletingProjectId(null);
         }
       },
       onCancel: closeConfirmDialog
@@ -689,9 +697,14 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
                   <button
                     type="button"
                     onClick={() => handleDeleteClub(club.id)}
-                    className="rounded-full p-2 text-red-600 hover:bg-red-50"
+                    disabled={deletingClubId === club.id}
+                    className="rounded-full p-2 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Trash2 size={16} />
+                    {deletingClubId === club.id ? (
+                      <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
                   </button>
                 </div>
               </Card>
@@ -713,9 +726,14 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
                   <button
                     type="button"
                     onClick={() => handleDeleteProject(project.id)}
-                    className="rounded-full p-2 text-red-600 hover:bg-red-50"
+                    disabled={deletingProjectId === project.id}
+                    className="rounded-full p-2 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Trash2 size={16} />
+                    {deletingProjectId === project.id ? (
+                      <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
                   </button>
                 </div>
               </Card>
