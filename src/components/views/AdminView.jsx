@@ -60,6 +60,9 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
   const [projects, setProjects] = useState([]);
   const [deletingClubId, setDeletingClubId] = useState(null);
   const [deletingProjectId, setDeletingProjectId] = useState(null);
+  const [loadingClubs, setLoadingClubs] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingParliament, setLoadingParliament] = useState(false);
 
   const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -149,18 +152,33 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
   };
 
   const loadParliament = async () => {
-    const members = await parliamentService.getAll();
-    setParliamentMembers(members.map(toCamelCase));
+    setLoadingParliament(true);
+    try {
+      const members = await parliamentService.getAll();
+      setParliamentMembers(members.map(toCamelCase));
+    } finally {
+      setLoadingParliament(false);
+    }
   };
 
   const loadClubs = async () => {
-    const allClubs = await clubsService.getAll();
-    setClubs(allClubs);
+    setLoadingClubs(true);
+    try {
+      const allClubs = await clubsService.getAll();
+      setClubs(allClubs);
+    } finally {
+      setLoadingClubs(false);
+    }
   };
 
   const loadProjects = async () => {
-    const allProjects = await projectsService.getAll();
-    setProjects(allProjects);
+    setLoadingProjects(true);
+    try {
+      const allProjects = await projectsService.getAll();
+      setProjects(allProjects);
+    } finally {
+      setLoadingProjects(false);
+    }
   };
 
   useEffect(() => {
@@ -695,7 +713,11 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
                 Добавить участника
               </button>
             </div>
-            {parliamentMembers.length === 0 ? (
+            {loadingParliament ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : parliamentMembers.length === 0 ? (
               <Card className="p-6 text-center text-sm text-gray-500">Участники ещё не добавлены.</Card>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -744,7 +766,14 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
         {activeTab === 'clubs' && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-900">Клубы ({clubs.length})</h2>
-            {clubs.map((club) => (
+            {loadingClubs ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : clubs.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-gray-500">Клубы ещё не созданы.</Card>
+            ) : (
+              clubs.map((club) => (
               <Card key={club.id} className="p-4">
                 <div className="flex justify-between">
                   <div className="space-y-1">
@@ -766,14 +795,22 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
                   </button>
                 </div>
               </Card>
-            ))}
+              ))
+            )}
           </div>
         )}
 
         {activeTab === 'projects' && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-900">Проекты ({projects.length})</h2>
-            {projects.map((project) => (
+            {loadingProjects ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : projects.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-gray-500">Проекты ещё не созданы.</Card>
+            ) : (
+              projects.map((project) => (
               <Card key={project.id} className="p-4">
                 <div className="flex justify-between">
                   <div className="space-y-1">
@@ -795,7 +832,8 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
                   </button>
                 </div>
               </Card>
-            ))}
+              ))
+            )}
           </div>
         )}
 

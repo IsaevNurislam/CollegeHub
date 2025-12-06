@@ -152,13 +152,34 @@ export const clubsService = {
 };
 
 // Projects
+// Helper to convert project data from snake_case to camelCase
+const normalizeProject = (project) => {
+  console.log('[normalizeProject] Input:', project);
+  const normalized = {
+    ...project,
+    backgroundUrl: project.background_url || project.backgroundUrl || '',
+    createdAt: project.created_at || project.createdAt,
+  };
+  console.log('[normalizeProject] Output:', normalized);
+  return normalized;
+};
+
 export const projectsService = {
   async getAll() {
-    return apiClient.get('/api/projects');
+    const projects = await apiClient.get('/api/projects');
+    console.log('[projectsService.getAll] Raw projects from API:', projects);
+    return projects.map(normalizeProject);
   },
 
   async create(project) {
-    return apiClient.post('/api/projects', project);
+    const payload = {
+      ...project,
+      background_url: project.backgroundUrl,
+    };
+    console.log('[projectsService.create] Sending payload:', payload);
+    const result = await apiClient.post('/api/projects', payload);
+    console.log('[projectsService.create] Result:', result);
+    return normalizeProject(result);
   },
 
   async delete(projectId) {
@@ -167,17 +188,38 @@ export const projectsService = {
 };
 
 // Schedule
+// Helper to convert schedule data from snake_case to camelCase
+const normalizeSchedule = (meeting) => ({
+  ...meeting,
+  startTime: meeting.start_time || meeting.startTime,
+  endTime: meeting.end_time || meeting.endTime,
+  createdAt: meeting.created_at || meeting.createdAt,
+});
+
 export const scheduleService = {
   async getAll() {
-    return apiClient.get('/api/schedule');
+    const meetings = await apiClient.get('/api/schedule');
+    return Array.isArray(meetings) ? meetings.map(normalizeSchedule) : [];
   },
 
   async create(meeting) {
-    return apiClient.post('/api/schedule', meeting);
+    const payload = {
+      ...meeting,
+      start_time: meeting.startTime,
+      end_time: meeting.endTime,
+    };
+    const result = await apiClient.post('/api/schedule', payload);
+    return normalizeSchedule(result);
   },
 
   async update(id, meeting) {
-    return apiClient.put(`/api/schedule/${id}`, meeting);
+    const payload = {
+      ...meeting,
+      start_time: meeting.startTime,
+      end_time: meeting.endTime,
+    };
+    const result = await apiClient.put(`/api/schedule/${id}`, payload);
+    return normalizeSchedule(result);
   },
 
   async delete(id) {
