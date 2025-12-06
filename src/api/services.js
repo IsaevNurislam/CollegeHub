@@ -35,9 +35,12 @@ const normalizeUser = (user) => {
     ...user,
     firstName,
     lastName,
-    lastNameChange: user.lastNameChange || user.last_name_change || user.profile?.last_name_change || null,
+    lastNameChangeDate: user.lastNameChangeDate || user.last_name_change_date || null,
     studentId: user.studentId || user.student_id || '',
     isAdmin: user.isAdmin ?? user.is_admin ?? false,
+    avatar: user.avatar || null,
+    joinedClubs: user.joinedClubs || user.joined_clubs || [],
+    joinedProjects: user.joinedProjects || user.joined_projects || [],
   };
 };
 
