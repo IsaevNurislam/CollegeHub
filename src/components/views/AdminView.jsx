@@ -25,6 +25,23 @@ const placeholderStyles = `
   }
 `;
 
+// Helper to convert snake_case keys to camelCase
+const toCamelCase = (member) => ({
+  ...member,
+  groupName: member.group_name || member.groupName || '',
+  avatarUrl: member.avatar_url || member.avatarUrl || member.avatar || '',
+});
+
+// Helper to convert camelCase keys to snake_case for API
+const toSnakeCase = (form) => ({
+  name: form.name,
+  role: form.role,
+  position: form.position,
+  description: form.description,
+  group_name: form.groupName,
+  avatar_url: form.avatarUrl,
+});
+
 export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
   const [activeTab, setActiveTab] = useState('news');
   const [allNews, setAllNews] = useState([]);
@@ -133,7 +150,7 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
 
   const loadParliament = async () => {
     const members = await parliamentService.getAll();
-    setParliamentMembers(members);
+    setParliamentMembers(members.map(toCamelCase));
   };
 
   const loadClubs = async () => {
@@ -271,7 +288,7 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
     if (!validateMemberForm(normalizedForm)) return;
     setIsFormSaving(true);
     try {
-      await parliamentService.addMember(normalizedForm);
+      await parliamentService.addMember(toSnakeCase(normalizedForm));
       await loadParliament();
       setIsAddModalOpen(false);
       setMemberForm({ ...emptyMemberForm });
@@ -305,7 +322,7 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
     if (!validateMemberForm(normalizedForm)) return;
     setIsFormSaving(true);
     try {
-      await parliamentService.updateMember(currentMember.id, normalizedForm);
+      await parliamentService.updateMember(currentMember.id, toSnakeCase(normalizedForm));
       await loadParliament();
       setIsEditModalOpen(false);
       setCurrentMember(null);
