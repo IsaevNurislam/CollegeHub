@@ -6,6 +6,19 @@ import {
   removeParliamentMember
 } from '../fetch/parliamentAPI';
 
+// Normalize user data from snake_case to camelCase
+const normalizeUser = (user) => {
+  if (!user) return user;
+  return {
+    ...user,
+    firstName: user.firstName || user.first_name || user.profile?.first_name || '',
+    lastName: user.lastName || user.last_name || user.profile?.last_name || '',
+    lastNameChange: user.lastNameChange || user.last_name_change || user.profile?.last_name_change || null,
+    studentId: user.studentId || user.student_id || '',
+    isAdmin: user.isAdmin ?? user.is_admin ?? false,
+  };
+};
+
 // Authentication
 export const authService = {
   async login(credentials) {
@@ -36,6 +49,10 @@ export const authService = {
     if (response.token) {
       apiClient.setToken(response.token);
     }
+    // Normalize user data
+    if (response.user) {
+      response.user = normalizeUser(response.user);
+    }
     return response;
   },
 
@@ -45,11 +62,13 @@ export const authService = {
   },
 
   async getMe() {
-    return apiClient.get('/api/user/me');
+    const user = await apiClient.get('/api/user/me');
+    return normalizeUser(user);
   },
 
   async updateProfile(data) {
-    return apiClient.put('/api/user/profile', data);
+    const user = await apiClient.put('/api/user/profile', data);
+    return normalizeUser(user);
   },
 };
 
