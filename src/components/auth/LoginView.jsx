@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { GraduationCap, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
 export default function LoginView({ onLogin }) {
   const { t } = useTranslation();
+  const [mode, setMode] = useState('login');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const isRegister = mode === 'register';
 
   const capitalizeFirstLetter = (value) => {
     if (!value) return '';
@@ -18,13 +21,25 @@ export default function LoginView({ onLogin }) {
 
   const validateInputs = () => {
     const newErrors = {};
-    if (!firstName.trim()) newErrors.firstName = t('login.errors.required');
-    else if (firstName.trim().length < 2) newErrors.firstName = t('login.errors.min_chars');
-    if (!lastName.trim()) newErrors.lastName = t('login.errors.required');
-    else if (lastName.trim().length < 2) newErrors.lastName = t('login.errors.min_chars');
-    if (!/^[0-9]{6}$/.test(studentId)) newErrors.studentId = 'ID должен содержать ровно 6 цифр';
-    if (!password.trim()) newErrors.password = t('login.errors.required');
-    else if (password.trim().length < 5) newErrors.password = 'Минимум 5 символов';
+    
+    if (isRegister) {
+      if (!firstName.trim()) newErrors.firstName = t('login.errors.required') || 'Обязательное поле';
+      else if (firstName.trim().length < 2) newErrors.firstName = t('login.errors.min_chars') || 'Минимум 2 символа';
+      
+      if (!lastName.trim()) newErrors.lastName = t('login.errors.required') || 'Обязательное поле';
+      else if (lastName.trim().length < 2) newErrors.lastName = t('login.errors.min_chars') || 'Минимум 2 символа';
+    }
+    
+    if (!/^[0-9]{6}$/.test(studentId)) {
+      newErrors.studentId = 'ID должен содержать ровно 6 цифр';
+    }
+    
+    if (!password.trim()) {
+      newErrors.password = t('login.errors.required') || 'Обязательное поле';
+    } else if (password.trim().length < 5) {
+      newErrors.password = 'Минимум 5 символов';
+    }
+    
     return newErrors;
   };
 
@@ -32,78 +47,156 @@ export default function LoginView({ onLogin }) {
     e.preventDefault();
     const newErrors = validateInputs();
     setErrors(newErrors);
+    
     if (Object.keys(newErrors).length === 0) {
-      // Trim all values to remove accidental whitespace
-      onLogin({ 
-        studentId: studentId.trim(), 
-        firstName: firstName.trim(), 
-        lastName: lastName.trim(), 
-        password: password.trim() 
-      });
+      const credentials = {
+        studentId: studentId.trim(),
+        password: password.trim(),
+      };
+      
+      if (isRegister) {
+        credentials.firstName = firstName.trim();
+        credentials.lastName = lastName.trim();
+        credentials.isRegistration = true;
+      }
+      
+      onLogin(credentials);
     }
+  };
+
+  const switchMode = () => {
+    setMode(mode === 'login' ? 'register' : 'login');
+    setErrors({});
+  };
+
+  const resetForm = () => {
+    setFirstName('');
+    setLastName('');
+    setStudentId('');
+    setPassword('');
+    setErrors({});
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <style>{`
-        input::placeholder { color: #9ca3af; }
-      `}</style>
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 text-sky-600 mb-4">
             <GraduationCap size={40} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('login.welcome')}</h1>
-          <p className="text-gray-500 mt-2">{t('login.instructions')}</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isRegister ? (t('login.register_title') || 'Регистрация') : (t('login.welcome') || 'Добро пожаловать')}
+          </h1>
+          <p className="text-gray-500 mt-2">
+            {isRegister 
+              ? (t('login.register_subtitle') || 'Создайте аккаунт для доступа к платформе')
+              : (t('login.instructions') || 'Войдите в свой аккаунт')
+            }
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.placeholder_first')}</label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(capitalizeFirstLetter(e.target.value))}
-              placeholder={t('login.placeholder_first')}
-              className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition text-white bg-slate-800 ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.firstName && <div className="flex items-center gap-1 text-red-500 text-sm mt-2"><AlertCircle size={16} />{errors.firstName}</div>}
-          </div>
+        <div className="flex mb-6 bg-slate-100 rounded-lg p-1">
+          <button
+            type="button"
+            onClick={() => { setMode('login'); resetForm(); }}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition flex items-center justify-center gap-2 ${
+              !isRegister ? 'bg-white shadow text-sky-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <LogIn size={16} />
+            {t('login.tab_login') || 'Вход'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('register'); resetForm(); }}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition flex items-center justify-center gap-2 ${
+              isRegister ? 'bg-white shadow text-sky-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <UserPlus size={16} />
+            {t('login.tab_register') || 'Регистрация'}
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {isRegister && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('login.placeholder_first') || 'Имя'}
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(capitalizeFirstLetter(e.target.value))}
+                  placeholder={t('login.placeholder_first') || 'Введите имя'}
+                  className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition bg-slate-800 text-white placeholder-gray-400 ${
+                    errors.firstName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.firstName && (
+                  <div className="flex items-center gap-1 text-red-500 text-sm mt-2">
+                    <AlertCircle size={16} />{errors.firstName}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('login.placeholder_last') || 'Фамилия'}
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(capitalizeFirstLetter(e.target.value))}
+                  placeholder={t('login.placeholder_last') || 'Введите фамилию'}
+                  className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition bg-slate-800 text-white placeholder-gray-400 ${
+                    errors.lastName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.lastName && (
+                  <div className="flex items-center gap-1 text-red-500 text-sm mt-2">
+                    <AlertCircle size={16} />{errors.lastName}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.placeholder_last')}</label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(capitalizeFirstLetter(e.target.value))}
-              placeholder={t('login.placeholder_last')}
-              className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition text-white bg-slate-800 ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.lastName && <div className="flex items-center gap-1 text-red-500 text-sm mt-2"><AlertCircle size={16} />{errors.lastName}</div>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.student_id_label')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('login.student_id_label') || 'Student ID'}
+            </label>
             <input
               type="text"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder={t('login.student_id_placeholder')}
+              placeholder={t('login.student_id_placeholder') || '000000'}
               maxLength="6"
-              className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition text-white bg-slate-800 ${errors.studentId ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition bg-slate-800 text-white placeholder-gray-400 ${
+                errors.studentId ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
-            {errors.studentId && <div className="flex items-center gap-1 text-red-500 text-sm mt-2"><AlertCircle size={16} />{errors.studentId}</div>}
+            {errors.studentId && (
+              <div className="flex items-center gap-1 text-red-500 text-sm mt-2">
+                <AlertCircle size={16} />{errors.studentId}
+              </div>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">{t('auth.passwordLabel')}</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              {t('auth.passwordLabel') || 'Пароль'}
+            </label>
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={t('auth.passwordPlaceholder')}
-                className={`w-full px-4 py-3 pr-12 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition text-white bg-slate-800 ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder={t('auth.passwordPlaceholder') || 'Введите пароль'}
+                className={`w-full px-4 py-3 pr-12 rounded-lg border focus:ring-2 focus:ring-sky-500 outline-none transition bg-slate-800 text-white placeholder-gray-400 ${
+                  errors.password ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
               <button
                 type="button"
@@ -113,13 +206,38 @@ export default function LoginView({ onLogin }) {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            {errors.password && <div className="flex items-center gap-1 text-red-500 text-sm mt-2"><AlertCircle size={16} />{errors.password}</div>}
+            {errors.password && (
+              <div className="flex items-center gap-1 text-red-500 text-sm mt-2">
+                <AlertCircle size={16} />{errors.password}
+              </div>
+            )}
           </div>
 
-          <button type="submit" className="w-full bg-sky-600 text-white py-3 rounded-lg font-bold hover:bg-sky-700 transition flex items-center justify-center gap-2">{t('login.submit')} <ArrowRight size={20} /></button>
+          <button
+            type="submit"
+            className="w-full bg-sky-600 text-white py-3 rounded-lg font-bold hover:bg-sky-700 transition flex items-center justify-center gap-2"
+          >
+            {isRegister ? (t('login.register_button') || 'Зарегистрироваться') : (t('login.submit') || 'Войти')}
+            <ArrowRight size={20} />
+          </button>
         </form>
 
-        <div className="mt-6 text-center text-xs text-gray-400">{t('login.no_id_help')}</div>
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={switchMode}
+            className="text-sm text-sky-600 hover:text-sky-700 hover:underline"
+          >
+            {isRegister 
+              ? (t('login.have_account') || 'Уже есть аккаунт? Войти')
+              : (t('login.no_account') || 'Нет аккаунта? Зарегистрироваться')
+            }
+          </button>
+        </div>
+
+        <div className="mt-4 text-center text-xs text-gray-400">
+          {t('login.no_id_help') || 'Если у вас нет Student ID, обратитесь в деканат'}
+        </div>
       </div>
     </div>
   );

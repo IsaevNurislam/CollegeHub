@@ -119,53 +119,23 @@ export default function App() {
 
   const handleLogin = async (credentials) => {
     try {
-      // Optimize payload: remove names for admin, trim password
-      const isLoginAdmin = credentials.studentId === '000001';
+      const isRegistration = credentials.isRegistration === true;
+      
       const optimizedCredentials = {
         studentId: credentials.studentId,
         password: credentials.password?.trim(),
-        // Only send names if NOT admin (admin is pre-seeded)
-        ...(!isLoginAdmin && { 
-          firstName: credentials.firstName?.trim(), 
-          lastName: credentials.lastName?.trim() 
-        })
       };
-
-      console.log('\n[Login] ╔════════════════════════════════════════════╗');
-      console.log('[Login] ║      LOGIN HANDLER - REQUEST START         ║');
-      console.log('[Login] ╚════════════════════════════════════════════╝');
-      console.log('[Login] │ studentId:', optimizedCredentials.studentId);
-      if (!isLoginAdmin) {
-        console.log('[Login] │ firstName:', optimizedCredentials.firstName);
-        console.log('[Login] │ lastName:', optimizedCredentials.lastName);
-      } else {
-        console.log('[Login] │ (Admin login - names omitted from payload)');
-      }
-      console.log('[Login] │ password provided:', !!optimizedCredentials.password, `(length: ${optimizedCredentials.password?.length})`);
-      console.log('[Login] │ API Base URL:', import.meta.env.VITE_API_URL);
-      console.log('[Login] └────────────────────────────────────────────');
       
-      // Clear any previous errors
+      if (isRegistration) {
+        optimizedCredentials.firstName = credentials.firstName?.trim();
+        optimizedCredentials.lastName = credentials.lastName?.trim();
+        optimizedCredentials.isRegistration = true;
+      }
+      
       setNotifications(prev => prev.filter(n => n.type !== 'error'));
       
-      console.log('[Login] Calling authService.login()...');
       const response = await authService.login(optimizedCredentials);
       
-      console.log('\n[Login] ╔════════════════════════════════════════════╗');
-      console.log('[Login] ║      LOGIN RESPONSE RECEIVED                ║');
-      console.log('[Login] ╚════════════════════════════════════════════╝');
-      console.log('[Login] │ Response structure:', {
-        hasToken: !!response.token,
-        hasUser: !!response.user,
-        tokenLength: response.token?.length || 0,
-        userId: response.user?.id,
-        studentId: response.user?.studentId,
-        userName: response.user?.name,
-        isAdmin: response.user?.isAdmin
-      });
-      console.log('[Login] └────────────────────────────────────────────');
-      
-      // Validate response structure
       if (!response.token || !response.user) {
         throw new Error('Invalid server response structure - missing token or user');
       }
@@ -174,42 +144,16 @@ export default function App() {
         throw new Error('Invalid user data - missing studentId');
       }
       
-      // Set user and auth state
-      console.log('[Login] Setting user state and authentication...');
       setUser(response.user);
       setIsAuthenticated(true);
       
-      console.log('[Login] ✓ State updated successfully');
-      console.log('[Login] ✅ LOGIN SUCCESSFUL for:', response.user.studentId);
-      addNotification(`Добро пожаловать, ${response.user.name}!`, 'success');
+      const welcomeMessage = isRegistration 
+        ? `Добро пожаловать, ${response.user.firstName || response.user.name}! Регистрация успешна.`
+        : `С возвращением, ${response.user.firstName || response.user.name}!`;
+      addNotification(welcomeMessage, 'success');
       
     } catch (error) {
-      console.error('\n[Login] ❌ LOGIN FAILED');
-      console.error('[Login] Error object:', error);
-      console.error('[Login] Error message:', error?.message);
-      console.error('[Login] Error stack:', error?.stack);
-      
-      // Extract meaningful error message
       const errorMessage = error?.message || 'Ошибка входа. Проверьте данные.';
-      
-      // Log detailed error for debugging
-      if (errorMessage.includes('401') || errorMessage.includes('Invalid credentials')) {
-        console.warn('[Login] ⚠️  Authentication failed - invalid credentials or token');
-        console.warn('[Login] Possible causes:');
-        console.warn('[Login]   1. Wrong password');
-        console.warn('[Login]   2. User not found in DB');
-        console.warn('[Login]   3. Password hash mismatch');
-      } else if (errorMessage.includes('Network') || errorMessage.includes('fetch')) {
-        console.error('[Login] ⚠️  Network error - backend not responding');
-        console.error('[Login] Check: Is backend running?');
-        console.error('[Login] Check: Is API_BASE_URL correct?');
-        console.error('[Login] Check: Firewall/CORS settings');
-      } else if (errorMessage.includes('response structure')) {
-        console.error('[Login] ⚠️  Backend returned invalid response structure');
-        console.error('[Login] Check: Backend /api/auth/login endpoint');
-      }
-      
-      // Show error notification to user
       addNotification(errorMessage, 'error');
     }
   };
