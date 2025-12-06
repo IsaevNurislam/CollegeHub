@@ -158,11 +158,11 @@ export default function ChatView({ user, onOpenDM }) {
   }
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
+    <div className="space-y-4 lg:max-w-4xl lg:mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">{t('chat.title') || 'Общий чат'}</h2>
-          <p className="text-sm text-slate-500 flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{t('chat.title') || 'Общий чат'}</h2>
+          <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-2">
             <Users size={14} />
             {t('chat.subtitle') || 'Общение всех студентов'}
           </p>
@@ -183,7 +183,7 @@ export default function ChatView({ user, onOpenDM }) {
       )}
 
       <Card className="p-0 overflow-hidden">
-        <div className="h-[500px] overflow-y-auto p-4 space-y-4 bg-slate-50">
+        <div className="h-[calc(100vh-14rem)] sm:h-[calc(100vh-16rem)] lg:h-[500px] min-h-[300px] overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-slate-50">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
               <MessageSquare size={48} className="mb-4 opacity-50" />
@@ -220,7 +220,7 @@ export default function ChatView({ user, onOpenDM }) {
                         </div>
                       )}
                       <div
-                        className={`max-w-[70%] px-4 py-2 rounded-2xl ${
+                        className={`max-w-[85%] sm:max-w-[70%] px-3 sm:px-4 py-2 rounded-2xl ${
                           message.isMine
                             ? 'bg-sky-600 text-white rounded-br-md'
                             : 'bg-white shadow-sm text-slate-900 rounded-bl-md'
@@ -286,9 +286,9 @@ export default function ChatView({ user, onOpenDM }) {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 bg-white border-t border-slate-200">
+        <div className="p-3 sm:p-4 bg-white border-t border-slate-200">
           {replyTo && (
-            <div className="mb-3 p-2 bg-sky-50 rounded-lg flex items-center justify-between">
+            <div className="mb-2 sm:mb-3 p-2 bg-sky-50 rounded-lg flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <Reply size={16} className="text-sky-600 flex-shrink-0" />
                 <div className="min-w-0">
@@ -304,21 +304,21 @@ export default function ChatView({ user, onOpenDM }) {
               </button>
             </div>
           )}
-          <div className="flex gap-3 items-end">
+          <div className="flex gap-2 sm:gap-3 items-end">
             <textarea
               ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={replyTo ? `Ответ для ${replyTo.author}...` : (t('chat.placeholder') || 'Напишите сообщение...')}
+              placeholder={replyTo ? `Ответ...` : (t('chat.placeholder') || 'Сообщение...')}
               rows={1}
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
-              style={{ minHeight: '48px', maxHeight: '120px' }}
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none text-sm sm:text-base"
+              style={{ minHeight: '44px', maxHeight: '100px' }}
             />
             <button
               onClick={sendMessage}
               disabled={!draft.trim() || sending}
-              className="p-3 rounded-xl bg-sky-600 text-white hover:bg-sky-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2.5 sm:p-3 rounded-xl bg-sky-600 text-white hover:bg-sky-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
             >
               {sending ? (
                 <Loader2 size={20} className="animate-spin" />

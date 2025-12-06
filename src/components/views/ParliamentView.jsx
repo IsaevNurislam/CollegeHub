@@ -63,10 +63,10 @@ export default function ParliamentView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold text-gray-800">{t('parliament.title')}</h2>
-        <p className="text-sm text-gray-500 max-w-2xl">{t('parliament.info')}</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">{t('parliament.title')}</h2>
+        <p className="text-xs sm:text-sm text-gray-500 max-w-2xl">{t('parliament.info')}</p>
       </div>
 
       {error && <p className="text-sm text-red-500">{error}</p>}

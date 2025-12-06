@@ -121,27 +121,27 @@ export default function ScheduleView({ schedule = [], setSchedule }) {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">{t('schedule.title')}</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">{t('schedule.title')}</h2>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-3 space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4">
+            <h3 className="text-base sm:text-lg font-bold text-gray-700 flex items-center gap-2">
               <Calendar size={20}/> {t('schedule.all')}
             </h3>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <button
                 onClick={exportToIcs}
-                className="flex items-center gap-2 px-4 py-2 bg-sky-100 text-sky-600 rounded-lg hover:bg-sky-200 transition font-medium text-sm"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-sky-100 text-sky-600 rounded-lg hover:bg-sky-200 transition font-medium text-xs sm:text-sm"
               >
-                <Download size={18} /> {t('schedule.export')}
+                <Download size={16} className="sm:w-[18px] sm:h-[18px]" /> <span className="hidden xs:inline">{t('schedule.export')}</span><span className="xs:hidden">ИCS</span>
               </button>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition font-medium text-sm"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition font-medium text-xs sm:text-sm"
               >
-                <Plus size={18} /> {t('schedule.add_meeting')}
+                <Plus size={16} className="sm:w-[18px] sm:h-[18px]" /> {t('schedule.add_meeting')}
               </button>
             </div>
           </div>

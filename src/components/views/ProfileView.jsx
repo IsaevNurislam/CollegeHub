@@ -152,14 +152,14 @@ export default function ProfileView({ user, onUpdateUser }) {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">{t('profile.title') || 'Профиль'}</h2>
+    <div className="space-y-6 lg:max-w-2xl">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">{t('profile.title') || 'Профиль'}</h2>
 
       <Card>
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <div className="relative group">
-              <div className="w-20 h-20 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-2xl overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="relative group flex-shrink-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-xl sm:text-2xl overflow-hidden">
                 {isUploadingAvatar ? (
                   <Loader2 className="w-8 h-8 animate-spin" />
                 ) : user.avatar?.startsWith('http') ? (
@@ -192,14 +192,14 @@ export default function ProfileView({ user, onUpdateUser }) {
           {canEdit ? (
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="px-4 py-2 bg-sky-100 text-sky-600 rounded-lg hover:bg-sky-200 transition font-medium"
+              className="w-full sm:w-auto px-4 py-2 bg-sky-100 text-sky-600 rounded-lg hover:bg-sky-200 transition font-medium text-sm sm:text-base"
             >
               {isEditing ? (t('common.cancel') || 'Отмена') : (t('profile.edit') || 'Редактировать')}
             </button>
           ) : (
-            <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg">
-              <Clock size={16} />
-              <span className="text-sm">
+            <div className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-500 rounded-lg">
+              <Clock size={16} className="flex-shrink-0" />
+              <span className="text-xs sm:text-sm">
                 {daysRemaining} {daysRemaining === 1 ? 'день' : daysRemaining < 5 ? 'дня' : 'дней'} до изменения
               </span>
             </div>

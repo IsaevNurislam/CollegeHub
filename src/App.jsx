@@ -978,15 +978,15 @@ function AppLayout({
 
       <div className="flex-1 flex flex-col">
         <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-          <div className="flex items-center gap-4 px-4 md:px-6 py-4 w-full">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4 w-full">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 onClick={() => setSidebarOpen((prev) => !prev)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
               >
                 ☰
               </button>
-              <h1 className="text-2xl font-semibold whitespace-nowrap">{headerTitle}</h1>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-semibold truncate">{headerTitle}</h1>
             </div>
             <div className="hidden md:flex flex-1 justify-center px-4">
               <input
@@ -997,7 +997,7 @@ function AppLayout({
                 className="w-full max-w-xl px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
               <button
                 onClick={toggleLanguage}
                 className="flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
@@ -1010,10 +1010,10 @@ function AppLayout({
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800"
+                className="flex items-center gap-1 sm:gap-2 rounded-full bg-slate-900 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white hover:bg-slate-800"
               >
                 <LogOut size={14} />
-                Выход
+                <span className="hidden sm:inline">Выход</span>
               </button>
             </div>
           </div>
