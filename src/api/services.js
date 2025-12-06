@@ -88,14 +88,33 @@ export const newsService = {
   },
 };
 
+// Helper to convert club data from snake_case to camelCase
+const normalizeClub = (club) => ({
+  ...club,
+  clubAvatar: club.club_avatar || club.clubAvatar || '',
+  backgroundUrl: club.background_url || club.backgroundUrl || '',
+  backgroundType: club.background_type || club.backgroundType || '',
+  creatorId: club.creator_id || club.creatorId,
+  createdAt: club.created_at || club.createdAt,
+});
+
 // Clubs
 export const clubsService = {
   async getAll() {
-    return apiClient.get('/api/clubs');
+    const clubs = await apiClient.get('/api/clubs');
+    return clubs.map(normalizeClub);
   },
 
   async create(club) {
-    return apiClient.post('/api/clubs', club);
+    // Convert camelCase to snake_case for backend
+    const payload = {
+      ...club,
+      club_avatar: club.clubAvatar,
+      background_url: club.backgroundUrl,
+      background_type: club.backgroundType,
+    };
+    const result = await apiClient.post('/api/clubs', payload);
+    return normalizeClub(result);
   },
 
   async join(clubId) {
@@ -111,7 +130,8 @@ export const clubsService = {
   },
 
   async getById(clubId) {
-    return apiClient.get(`/api/clubs/${clubId}`);
+    const club = await apiClient.get(`/api/clubs/${clubId}`);
+    return normalizeClub(club);
   },
 
   async getMembers(clubId) {
