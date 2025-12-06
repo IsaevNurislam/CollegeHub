@@ -6,19 +6,15 @@ import {
   removeParliamentMember
 } from '../fetch/parliamentAPI';
 
-// Normalize user data from snake_case to camelCase
-// Helper to check if value is a valid name (not a placeholder like "profile.first_name")
 const isValidName = (value) => {
   if (!value || typeof value !== 'string') return false;
-  // Ignore values that look like field names/paths
   if (value.includes('.') || value.includes('_')) return false;
   return value.trim().length > 0;
 };
 
 const normalizeUser = (user) => {
   if (!user) return user;
-  
-  // Try to get first name from various sources
+
   const firstName = [
     user.firstName,
     user.first_name,
@@ -26,8 +22,7 @@ const normalizeUser = (user) => {
     user.profile?.first_name,
     user['profile.first_name']
   ].find(isValidName) || '';
-  
-  // Try to get last name from various sources
+
   const lastName = [
     user.lastName,
     user.last_name,
@@ -35,51 +30,41 @@ const normalizeUser = (user) => {
     user.profile?.last_name,
     user['profile.last_name']
   ].find(isValidName) || '';
-  
+
   return {
     ...user,
     firstName,
     lastName,
-    lastNameChange: user.lastNameChange || user.last_name_change || user.profile?.last_name_change || user['profile.last_name_change'] || null,
+    lastNameChange: user.lastNameChange || user.last_name_change || user.profile?.last_name_change || null,
     studentId: user.studentId || user.student_id || '',
     isAdmin: user.isAdmin ?? user.is_admin ?? false,
   };
 };
 
-// Authentication
+const sanitizePassword = (password) => {
+  if (!password) return '';
+  return String(password).replace(/^[:\s]+/, '').trim();
+};
+
 export const authService = {
   async login(credentials) {
-    // Sanitize inputs: strip any accidental prefixes like ": " and trim whitespace
-    const sanitizePassword = (pwd) => {
-      if (!pwd) return '';
-      // Remove leading colons, spaces, or other common copy-paste artifacts
-      return String(pwd).replace(/^[:\s]+/, '').trim();
-    };
-
     const payload = {
       studentId: String(credentials.studentId).trim(),
       password: sanitizePassword(credentials.password),
-      // Only include names if present
       ...(credentials.firstName && { firstName: credentials.firstName.trim() }),
       ...(credentials.lastName && { lastName: credentials.lastName.trim() })
     };
-    
-    // DEBUG: Log payload to console to verify data before sending
-    console.log('[AuthService] Login Payload:', {
-      studentId: payload.studentId,
-      password: payload.password ? `[HIDDEN] (len=${payload.password.length})` : 'MISSING',
-      firstName: payload.firstName || '(not sent)',
-      lastName: payload.lastName || '(not sent)'
-    });
 
     const response = await apiClient.post('/api/auth/login', payload);
+    
     if (response.token) {
       apiClient.setToken(response.token);
     }
-    // Normalize user data
+    
     if (response.user) {
       response.user = normalizeUser(response.user);
     }
+    
     return response;
   },
 
@@ -99,7 +84,6 @@ export const authService = {
   },
 };
 
-// News
 export const newsService = {
   async getAll() {
     return apiClient.get('/api/news');
@@ -134,40 +118,29 @@ export const newsService = {
   },
 };
 
-// Helper to convert club data from snake_case to camelCase
-const normalizeClub = (club) => {
-  console.log('[normalizeClub] Input:', club);
-  const normalized = {
-    ...club,
-    clubAvatar: club.club_avatar || club.clubAvatar || '',
-    backgroundUrl: club.background_url || club.backgroundUrl || '',
-    backgroundType: club.background_type || club.backgroundType || '',
-    creatorId: club.creator_id || club.creatorId,
-    createdAt: club.created_at || club.createdAt,
-  };
-  console.log('[normalizeClub] Output:', normalized);
-  return normalized;
-};
+const normalizeClub = (club) => ({
+  ...club,
+  clubAvatar: club.club_avatar || club.clubAvatar || '',
+  backgroundUrl: club.background_url || club.backgroundUrl || '',
+  backgroundType: club.background_type || club.backgroundType || '',
+  creatorId: club.creator_id || club.creatorId,
+  createdAt: club.created_at || club.createdAt,
+});
 
-// Clubs
 export const clubsService = {
   async getAll() {
     const clubs = await apiClient.get('/api/clubs');
-    console.log('[clubsService.getAll] Raw clubs from API:', clubs);
     return clubs.map(normalizeClub);
   },
 
   async create(club) {
-    // Convert camelCase to snake_case for backend
     const payload = {
       ...club,
       club_avatar: club.clubAvatar,
       background_url: club.backgroundUrl,
       background_type: club.backgroundType,
     };
-    console.log('[clubsService.create] Sending payload:', payload);
     const result = await apiClient.post('/api/clubs', payload);
-    console.log('[clubsService.create] Result:', result);
     return normalizeClub(result);
   },
 
@@ -197,23 +170,15 @@ export const clubsService = {
   }
 };
 
-// Projects
-// Helper to convert project data from snake_case to camelCase
-const normalizeProject = (project) => {
-  console.log('[normalizeProject] Input:', project);
-  const normalized = {
-    ...project,
-    backgroundUrl: project.background_url || project.backgroundUrl || '',
-    createdAt: project.created_at || project.createdAt,
-  };
-  console.log('[normalizeProject] Output:', normalized);
-  return normalized;
-};
+const normalizeProject = (project) => ({
+  ...project,
+  backgroundUrl: project.background_url || project.backgroundUrl || '',
+  createdAt: project.created_at || project.createdAt,
+});
 
 export const projectsService = {
   async getAll() {
     const projects = await apiClient.get('/api/projects');
-    console.log('[projectsService.getAll] Raw projects from API:', projects);
     return projects.map(normalizeProject);
   },
 
@@ -222,9 +187,7 @@ export const projectsService = {
       ...project,
       background_url: project.backgroundUrl,
     };
-    console.log('[projectsService.create] Sending payload:', payload);
     const result = await apiClient.post('/api/projects', payload);
-    console.log('[projectsService.create] Result:', result);
     return normalizeProject(result);
   },
 
@@ -233,8 +196,6 @@ export const projectsService = {
   },
 };
 
-// Schedule
-// Helper to convert schedule data from snake_case to camelCase
 const normalizeSchedule = (meeting) => ({
   ...meeting,
   startTime: meeting.start_time || meeting.startTime,
@@ -273,15 +234,12 @@ export const scheduleService = {
   },
 };
 
-// Activities
 export const activitiesService = {
   async getAll() {
     return apiClient.get('/api/activities');
   },
 };
 
-// Parliament
-// Helper to convert parliament member data from snake_case to camelCase
 const normalizeParliamentMember = (member) => ({
   ...member,
   groupName: member.group_name || member.groupName || '',
@@ -302,7 +260,6 @@ export const parliamentService = {
   }
 };
 
-// File Upload
 export const uploadService = {
   async uploadImage(file, folder = 'college-hub') {
     return apiClient.uploadFile('/api/upload', file, {
