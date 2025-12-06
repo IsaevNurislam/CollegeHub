@@ -89,19 +89,25 @@ export const newsService = {
 };
 
 // Helper to convert club data from snake_case to camelCase
-const normalizeClub = (club) => ({
-  ...club,
-  clubAvatar: club.club_avatar || club.clubAvatar || '',
-  backgroundUrl: club.background_url || club.backgroundUrl || '',
-  backgroundType: club.background_type || club.backgroundType || '',
-  creatorId: club.creator_id || club.creatorId,
-  createdAt: club.created_at || club.createdAt,
-});
+const normalizeClub = (club) => {
+  console.log('[normalizeClub] Input:', club);
+  const normalized = {
+    ...club,
+    clubAvatar: club.club_avatar || club.clubAvatar || '',
+    backgroundUrl: club.background_url || club.backgroundUrl || '',
+    backgroundType: club.background_type || club.backgroundType || '',
+    creatorId: club.creator_id || club.creatorId,
+    createdAt: club.created_at || club.createdAt,
+  };
+  console.log('[normalizeClub] Output:', normalized);
+  return normalized;
+};
 
 // Clubs
 export const clubsService = {
   async getAll() {
     const clubs = await apiClient.get('/api/clubs');
+    console.log('[clubsService.getAll] Raw clubs from API:', clubs);
     return clubs.map(normalizeClub);
   },
 
@@ -113,7 +119,9 @@ export const clubsService = {
       background_url: club.backgroundUrl,
       background_type: club.backgroundType,
     };
+    console.log('[clubsService.create] Sending payload:', payload);
     const result = await apiClient.post('/api/clubs', payload);
+    console.log('[clubsService.create] Result:', result);
     return normalizeClub(result);
   },
 
