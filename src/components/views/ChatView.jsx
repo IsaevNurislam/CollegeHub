@@ -183,7 +183,7 @@ export default function ChatView({ user, onOpenDM }) {
       )}
 
       <Card className="p-0 overflow-hidden">
-        <div className="h-[calc(100vh-14rem)] sm:h-[calc(100vh-16rem)] lg:h-[500px] min-h-[300px] overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-slate-50">
+        <div className="h-[calc(100vh-14rem)] sm:h-[calc(100vh-16rem)] lg:h-[700px] min-h-[300px] overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-slate-50">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
               <MessageSquare size={48} className="mb-4 opacity-50" />

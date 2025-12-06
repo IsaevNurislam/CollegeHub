@@ -378,7 +378,7 @@ export default function DirectMessagesView({ user, initialPartner, onClearPartne
       </div>
 
       <Card className="p-0 overflow-hidden">
-        <div className="flex h-[calc(100vh-12rem)] sm:h-[calc(100vh-14rem)] lg:h-[600px] min-h-[400px]">
+        <div className="flex h-[calc(100vh-12rem)] sm:h-[calc(100vh-14rem)] lg:h-[800px] min-h-[400px]">
           <div className={`w-full lg:w-80 lg:border-r border-slate-200 flex flex-col ${
             selectedPartner ? 'hidden lg:flex' : ''
           }`}>
