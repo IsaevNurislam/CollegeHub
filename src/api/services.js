@@ -58,7 +58,7 @@ export const authService = {
       ...(credentials.lastName && { lastName: credentials.lastName.trim() })
     };
 
-    const response = await apiClient.post('/api/login', payload);
+    const response = await apiClient.post('/api/auth/login', payload);
     
     if (response.token) {
       apiClient.setToken(response.token);
