@@ -175,14 +175,14 @@ function ChatWithUser({ partner, user, onBack }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-slate-200 bg-white flex items-center gap-3">
+      <div className="p-3 sm:p-4 border-b border-slate-200 bg-white flex items-center gap-2 sm:gap-3">
         <button
           onClick={onBack}
-          className="p-2 rounded-lg hover:bg-slate-100 transition lg:hidden"
+          className="p-2 rounded-lg hover:bg-slate-100 transition lg:hidden flex-shrink-0"
         >
           <ArrowLeft size={20} />
         </button>
-        <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-semibold overflow-hidden">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-semibold overflow-hidden flex-shrink-0">
           {partner.avatar?.startsWith('http') ? (
             <img src={partner.avatar} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -197,7 +197,7 @@ function ChatWithUser({ partner, user, onBack }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-slate-50">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-6 h-6 animate-spin text-sky-600" />
@@ -222,7 +222,7 @@ function ChatWithUser({ partner, user, onBack }) {
                     className={`flex ${message.isMine ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[70%] px-4 py-2 rounded-2xl ${
+                      className={`max-w-[85%] sm:max-w-[70%] px-3 sm:px-4 py-2 rounded-2xl ${
                         message.isMine
                           ? 'bg-sky-600 text-white rounded-br-md'
                           : 'bg-white shadow-sm text-slate-900 rounded-bl-md'
@@ -250,22 +250,22 @@ function ChatWithUser({ partner, user, onBack }) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-white border-t border-slate-200">
-        <div className="flex gap-3 items-end">
+      <div className="p-3 sm:p-4 bg-white border-t border-slate-200">
+        <div className="flex gap-2 sm:gap-3 items-end">
           <textarea
             ref={inputRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={t('dm.placeholder') || 'Напишите сообщение...'}
+            placeholder={t('dm.placeholder') || 'Сообщение...'}
             rows={1}
-            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
-            style={{ minHeight: '48px', maxHeight: '120px' }}
+            className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none text-sm sm:text-base"
+            style={{ minHeight: '44px', maxHeight: '100px' }}
           />
           <button
             onClick={sendMessage}
             disabled={!draft.trim() || sending}
-            className="p-3 rounded-xl bg-sky-600 text-white hover:bg-sky-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2.5 sm:p-3 rounded-xl bg-sky-600 text-white hover:bg-sky-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             {sending ? (
               <Loader2 size={20} className="animate-spin" />
@@ -358,13 +358,13 @@ export default function DirectMessagesView({ user, initialPartner, onClearPartne
   };
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 lg:max-w-4xl lg:mx-auto">
+      <div className={`flex items-center justify-between ${selectedPartner ? 'hidden lg:flex' : ''}`}>
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
             {t('dm.title') || 'Личные сообщения'}
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-xs sm:text-sm text-slate-500">
             {t('dm.subtitle') || 'Приватные диалоги'}
           </p>
         </div>
@@ -378,8 +378,8 @@ export default function DirectMessagesView({ user, initialPartner, onClearPartne
       </div>
 
       <Card className="p-0 overflow-hidden">
-        <div className="flex h-[600px]">
-          <div className={`w-full lg:w-80 border-r border-slate-200 flex flex-col ${
+        <div className="flex h-[calc(100vh-12rem)] sm:h-[calc(100vh-14rem)] lg:h-[600px] min-h-[400px]">
+          <div className={`w-full lg:w-80 lg:border-r border-slate-200 flex flex-col ${
             selectedPartner ? 'hidden lg:flex' : ''
           }`}>
             <div className="p-4 border-b border-slate-200">
@@ -391,7 +391,7 @@ export default function DirectMessagesView({ user, initialPartner, onClearPartne
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={handleSearchKeyPress}
-                    placeholder={t('dm.searchPlaceholder') || 'Поиск по ID студента...'}
+                    placeholder={t('dm.searchPlaceholder') || 'Поиск по ID...'}
                     className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
                   />
                 </div>
