@@ -82,7 +82,7 @@ export default function ProfileView({ user, onUpdateUser }) {
 
     try {
       const result = await uploadService.uploadImage(file, 'avatars');
-      await onUpdateUser({ avatarUrl: result.url });
+      await onUpdateUser({ avatar: result.url });
       setSuccess('Аватар успешно обновлён');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
@@ -162,8 +162,8 @@ export default function ProfileView({ user, onUpdateUser }) {
               <div className="w-20 h-20 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-2xl overflow-hidden">
                 {isUploadingAvatar ? (
                   <Loader2 className="w-8 h-8 animate-spin" />
-                ) : user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                ) : user.avatar?.startsWith('http') ? (
+                  <img src={user.avatar} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
                   user.avatar || displayName?.[0] || 'U'
                 )}
