@@ -55,7 +55,8 @@ export const authService = {
       studentId: String(credentials.studentId).trim(),
       password: sanitizePassword(credentials.password),
       ...(credentials.firstName && { firstName: credentials.firstName.trim() }),
-      ...(credentials.lastName && { lastName: credentials.lastName.trim() })
+      ...(credentials.lastName && { lastName: credentials.lastName.trim() }),
+      ...(credentials.isRegistration && { isRegistration: true })
     };
 
     const response = await apiClient.post('/api/auth/login', payload);
