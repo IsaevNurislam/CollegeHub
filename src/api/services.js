@@ -11,9 +11,9 @@ const normalizeUser = (user) => {
   if (!user) return user;
   return {
     ...user,
-    firstName: user.firstName || user.first_name || user.profile?.first_name || '',
-    lastName: user.lastName || user.last_name || user.profile?.last_name || '',
-    lastNameChange: user.lastNameChange || user.last_name_change || user.profile?.last_name_change || null,
+    firstName: user.firstName || user.first_name || user.profile?.first_name || user['profile.first_name'] || '',
+    lastName: user.lastName || user.last_name || user.profile?.last_name || user['profile.last_name'] || '',
+    lastNameChange: user.lastNameChange || user.last_name_change || user.profile?.last_name_change || user['profile.last_name_change'] || null,
     studentId: user.studentId || user.student_id || '',
     isAdmin: user.isAdmin ?? user.is_admin ?? false,
   };
