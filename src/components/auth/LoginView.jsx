@@ -33,7 +33,13 @@ export default function LoginView({ onLogin }) {
     const newErrors = validateInputs();
     setErrors(newErrors);
     if (Object.keys(newErrors).length === 0) {
-      onLogin({ studentId, firstName, lastName, password });
+      // Trim all values to remove accidental whitespace
+      onLogin({ 
+        studentId: studentId.trim(), 
+        firstName: firstName.trim(), 
+        lastName: lastName.trim(), 
+        password: password.trim() 
+      });
     }
   };
 
