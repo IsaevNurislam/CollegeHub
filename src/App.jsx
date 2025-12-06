@@ -512,6 +512,22 @@ export default function App() {
           addNotification('Введите название проекта', 'error');
           return;
         }
+        
+        // Upload project background to Cloudinary if file exists
+        let projectBackgroundUrl = '';
+        if (formData.projectBackgroundFile) {
+          try {
+            addNotification('Загружаем фон проекта...', 'info');
+            const uploadResult = await uploadService.uploadImage(formData.projectBackgroundFile, 'project-backgrounds');
+            projectBackgroundUrl = uploadResult.url || uploadResult.secure_url;
+          } catch (uploadError) {
+            console.error('Failed to upload project background:', uploadError);
+            addNotification('Ошибка при загрузке изображения: ' + (uploadError?.message || 'Неизвестная ошибка'), 'error');
+            setIsSubmittingModal(false);
+            return;
+          }
+        }
+        
         const neededArray = needed ? needed.split(',').map(s => s.trim()).filter(s => s) : [];
         const projectPayload = {
           title,
@@ -519,7 +535,7 @@ export default function App() {
           status: status || 'developing',
           author: user?.name || 'Студент',
           needed: neededArray,
-          backgroundUrl: formData.projectBackground || ''
+          backgroundUrl: projectBackgroundUrl
         };
         const newProject = await projectsService.create(projectPayload);
         setProjects(prev => [...prev, newProject]);
