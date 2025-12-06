@@ -234,14 +234,22 @@ function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       studentId TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
+      first_name TEXT,
+      last_name TEXT,
       role TEXT,
       isAdmin INTEGER DEFAULT 0,
       avatar TEXT,
       password TEXT NOT NULL,
       joinedClubs TEXT DEFAULT '[]',
       joinedProjects TEXT DEFAULT '[]',
+      last_name_change_date TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+
+    // Add columns if they don't exist (migrations for existing DBs)
+    db.run(`ALTER TABLE users ADD COLUMN first_name TEXT`, () => {});
+    db.run(`ALTER TABLE users ADD COLUMN last_name TEXT`, () => {});
+    db.run(`ALTER TABLE users ADD COLUMN last_name_change_date TEXT`, () => {});
 
     // News table
     db.run(`CREATE TABLE IF NOT EXISTS news (
@@ -934,9 +942,9 @@ app.post('/api/auth/login', (req, res) => {
           console.log('[Auth] Prepared user data:', { name, avatar, isAdmin: 0, role: 'Студент, 2 курс' });
 
           db.run(
-            `INSERT INTO users (studentId, name, role, avatar, password, isAdmin, joinedClubs, joinedProjects)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [studentId, name, 'Студент, 2 курс', avatar, hashedPassword, 0, '[]', '[]'],
+            `INSERT INTO users (studentId, name, first_name, last_name, role, avatar, password, isAdmin, joinedClubs, joinedProjects)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [studentId, name, cleanedFirstName, cleanedLastName, 'Студент, 2 курс', avatar, hashedPassword, 0, '[]', '[]'],
             function(err) {
               try {
                 if (err) {
@@ -954,13 +962,15 @@ app.post('/api/auth/login', (req, res) => {
                   token,
                   user: {
                     id: newUserId,
-                    studentId,
+                    student_id: studentId,
+                    first_name: cleanedFirstName,
+                    last_name: cleanedLastName,
                     name,
                     role: 'Студент, 2 курс',
                     avatar,
-                    isAdmin: false,
-                    joinedClubs: [],
-                    joinedProjects: []
+                    is_admin: false,
+                    joined_clubs: [],
+                    joined_projects: []
                   }
                 };
                 
@@ -995,13 +1005,16 @@ app.post('/api/auth/login', (req, res) => {
             token,
             user: {
               id: user.id,
-              studentId: user.studentId,
+              student_id: user.studentId,
+              first_name: user.first_name,
+              last_name: user.last_name,
               name: user.name,
               role: user.role,
               avatar: user.avatar,
-              isAdmin: user.isAdmin === 1,
-              joinedClubs: JSON.parse(user.joinedClubs || '[]'),
-              joinedProjects: JSON.parse(user.joinedProjects || '[]')
+              last_name_change_date: user.last_name_change_date,
+              is_admin: user.isAdmin === 1,
+              joined_clubs: JSON.parse(user.joinedClubs || '[]'),
+              joined_projects: JSON.parse(user.joinedProjects || '[]')
             }
           };
           
@@ -1060,39 +1073,76 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 
     res.json({
       id: user.id,
-      studentId: user.studentId,
+      student_id: user.studentId,
+      first_name: user.first_name,
+      last_name: user.last_name,
       name: user.name,
       role: user.role,
       avatar: user.avatar,
-      isAdmin: user.isAdmin === 1,
-      joinedClubs: JSON.parse(user.joinedClubs || '[]'),
-      joinedProjects: JSON.parse(user.joinedProjects || '[]')
+      last_name_change_date: user.last_name_change_date,
+      is_admin: user.isAdmin === 1,
+      joined_clubs: JSON.parse(user.joinedClubs || '[]'),
+      joined_projects: JSON.parse(user.joinedProjects || '[]')
     });
   });
 });
 
 // Update user profile
 app.put('/api/user/profile', authenticateToken, (req, res) => {
-  const { name, role } = req.body;
-  const avatar = name ? `${name.split(' ')[0][0]}${name.split(' ')[1]?.[0] || 'S'}`.toUpperCase() : null;
+  const { firstName, lastName, name, role, avatarUrl, lastNameChangeDate } = req.body;
+  
+  // Build display name
+  let displayName = name;
+  if (!displayName && (firstName || lastName)) {
+    displayName = `${firstName || ''} ${lastName || ''}`.trim();
+  }
+  
+  // Build avatar from initials if no avatarUrl provided
+  let avatar = avatarUrl;
+  if (!avatar && displayName) {
+    const parts = displayName.split(' ');
+    avatar = `${parts[0]?.[0] || ''}${parts[1]?.[0] || 'S'}`.toUpperCase();
+  }
 
-  db.run(`UPDATE users SET name = COALESCE(?, name), role = COALESCE(?, role), avatar = COALESCE(?, avatar)
-          WHERE id = ?`,
-    [name, role, avatar, req.user.id],
+  const updates = [];
+  const values = [];
+  
+  if (firstName !== undefined) { updates.push('first_name = ?'); values.push(firstName); }
+  if (lastName !== undefined) { updates.push('last_name = ?'); values.push(lastName); }
+  if (displayName) { updates.push('name = ?'); values.push(displayName); }
+  if (role !== undefined) { updates.push('role = ?'); values.push(role); }
+  if (avatar) { updates.push('avatar = ?'); values.push(avatar); }
+  if (lastNameChangeDate) { updates.push('last_name_change_date = ?'); values.push(lastNameChangeDate); }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  values.push(req.user.id);
+
+  db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+    values,
     function(err) {
       if (err) {
+        console.error('Profile update error:', err);
         return res.status(500).json({ error: 'Failed to update profile' });
       }
 
       db.get('SELECT * FROM users WHERE id = ?', [req.user.id], (err, user) => {
+        if (err || !user) {
+          return res.status(500).json({ error: 'Failed to fetch updated profile' });
+        }
         res.json({
           id: user.id,
-          studentId: user.studentId,
+          student_id: user.studentId,
+          first_name: user.first_name,
+          last_name: user.last_name,
           name: user.name,
           role: user.role,
           avatar: user.avatar,
-          joinedClubs: JSON.parse(user.joinedClubs || '[]'),
-          joinedProjects: JSON.parse(user.joinedProjects || '[]')
+          last_name_change_date: user.last_name_change_date,
+          joined_clubs: JSON.parse(user.joinedClubs || '[]'),
+          joined_projects: JSON.parse(user.joinedProjects || '[]')
         });
       });
     });

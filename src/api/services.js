@@ -262,17 +262,40 @@ export const parliamentService = {
 
 export const uploadService = {
   async uploadImage(file, folder = 'college-hub') {
-    return apiClient.uploadFile('/api/upload', file, {
-      resourceType: 'image',
-      folder: folder
-    });
+    return this.uploadToCloudinary(file, folder);
   },
 
   async uploadFile(file, folder = 'college-hub') {
-    return apiClient.uploadFile('/api/upload', file, {
-      resourceType: 'auto',
-      folder: folder
-    });
+    return this.uploadToCloudinary(file, folder);
+  },
+
+  async uploadToCloudinary(file, folder = 'college-hub') {
+    const CLOUD_NAME = 'dzyzxltck';
+    const UPLOAD_PRESET = 'college_hub_unsigned';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('folder', folder);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+      { method: 'POST', body: formData }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || 'Upload failed');
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id,
+      width: result.width,
+      height: result.height,
+    };
   }
 };
 
