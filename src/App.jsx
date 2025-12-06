@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Home, Users, Briefcase, Activity, Calendar, Shield, Users2, HelpCircle, User } from 'lucide-react';
+import { LogOut, Home, Users, Briefcase, Activity, Calendar, Shield, Users2, HelpCircle, User, MessageSquare } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import HomeView from './components/views/HomeView';
@@ -11,6 +11,7 @@ import AdminView from './components/views/AdminView';
 import ParliamentView from './components/views/ParliamentView';
 import SupportView from './components/views/SupportView';
 import ProfileView from './components/views/ProfileView';
+import ChatView from './components/views/ChatView';
 import ClubDetailsModal from './components/common/ClubDetailsModal';
 import LoginView from './components/auth/LoginView';
 import Modal from './components/common/Modal';
@@ -27,6 +28,7 @@ const NAV_TABS = [
   { key: 'activity', labelKey: 'sidebar.activity', path: '/activity', icon: Activity },
   { key: 'schedule', labelKey: 'sidebar.schedule', path: '/schedule', icon: Calendar },
   { key: 'parliament', labelKey: 'sidebar.parliament', path: '/parliament', icon: Users2 },
+  { key: 'chat', labelKey: 'sidebar.chat', path: '/chat', icon: MessageSquare },
   { key: 'profile', labelKey: 'sidebar.profile', path: '/profile', icon: User },
   { key: 'admin', labelKey: 'sidebar.admin', path: '/admin', icon: Shield },
   { key: 'support', labelKey: 'sidebar.support', path: '/support', icon: HelpCircle }
@@ -37,6 +39,7 @@ const determineTabKey = (pathname) => {
   if (pathname.startsWith('/support')) return 'support';
   if (pathname.startsWith('/profile')) return 'profile';
   if (pathname.startsWith('/parliament')) return 'parliament';
+  if (pathname.startsWith('/chat')) return 'chat';
   if (pathname.startsWith('/schedule')) return 'schedule';
   if (pathname.startsWith('/activity')) return 'activity';
   if (pathname.startsWith('/projects')) return 'projects';
@@ -1101,6 +1104,7 @@ function AppLayout({
             />
             <Route path="/schedule" element={<ScheduleView schedule={schedule} setSchedule={setSchedule} />} />
             <Route path="/parliament" element={<ParliamentView user={user} />} />
+            <Route path="/chat" element={<ChatView user={user} />} />
             <Route 
               path="/profile" 
               element={<ProfileView user={user} onUpdateUser={handleUpdateProfile} />} 

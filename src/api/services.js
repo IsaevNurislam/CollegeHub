@@ -275,3 +275,25 @@ export const uploadService = {
     });
   }
 };
+
+const normalizeChatMessage = (message) => ({
+  ...message,
+  createdAt: message.created_at || message.createdAt,
+  isMine: message.is_mine ?? message.isMine ?? false,
+});
+
+export const chatService = {
+  async getMessages() {
+    const messages = await apiClient.get('/api/chat/messages');
+    return Array.isArray(messages) ? messages.map(normalizeChatMessage) : [];
+  },
+
+  async sendMessage(text) {
+    const message = await apiClient.post('/api/chat/messages', { text });
+    return normalizeChatMessage(message);
+  },
+
+  async deleteMessage(messageId) {
+    return apiClient.delete(`/api/chat/messages/${messageId}`);
+  },
+};

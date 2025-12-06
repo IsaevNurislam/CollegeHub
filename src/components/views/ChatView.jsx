@@ -1,210 +1,253 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../common/UI';
 import { useTranslation } from '../../i18n';
-import { MessageSquare, Paperclip, Send, Mic2, Smile, Link, Settings, Star } from 'lucide-react';
-import { INITIAL_CHAT_MESSAGES } from '../../data/mockData';
+import { MessageSquare, Send, Loader2, Users, RefreshCw } from 'lucide-react';
+import { chatService } from '../../api/services';
 
-const formatTime = (date) => new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+const formatTime = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatDate = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+};
 
 export default function ChatView({ user }) {
   const { t } = useTranslation();
-  const [messages, setMessages] = useState(INITIAL_CHAT_MESSAGES);
+  const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
-  const [recording, setRecording] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const messagesEndRef = useRef(null);
+  const pollIntervalRef = useRef(null);
 
-  const pinnedMessage = useMemo(() => messages.find((message) => message.pinned), [messages]);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  const sendMessage = () => {
-    const trimmed = draft.trim();
-    if (!trimmed) return;
-    const next = {
-      id: Date.now(),
-      author: user?.name || 'Вы',
-      avatar: user?.avatar || (user?.name?.[0] || 'Т'),
-      time: formatTime(Date.now()),
-      text: trimmed,
-      isMine: true,
-      status: 'sent'
+  const loadMessages = async () => {
+    try {
+      const data = await chatService.getMessages();
+      setMessages(data);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Не удалось загрузить сообщения');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMessages();
+    
+    pollIntervalRef.current = setInterval(() => {
+      loadMessages();
+    }, 5000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
     };
-    setMessages((prev) => [...prev, next]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const sendMessage = async () => {
+    const trimmed = draft.trim();
+    if (!trimmed || sending) return;
+
+    const tempId = Date.now();
+    const tempMessage = {
+      id: tempId,
+      text: trimmed,
+      author: user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Вы',
+      avatar: user?.avatar || (user?.firstName?.[0] || user?.name?.[0] || 'U'),
+      createdAt: new Date().toISOString(),
+      isMine: true,
+      pending: true,
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
     setDraft('');
+    setSending(true);
+
+    try {
+      const savedMessage = await chatService.sendMessage(trimmed);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? { ...savedMessage, isMine: true } : m))
+      );
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId ? { ...m, pending: false, error: true } : m
+        )
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
-  const toggleRecording = () => {
-    setRecording((prev) => !prev);
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
-  const quickActions = [
-    { label: t('chat.action_voice'), icon: <Mic2 size={16} /> },
-    { label: t('chat.action_sticker'), icon: <Smile size={16} /> },
-    { label: t('chat.action_attach'), icon: <Paperclip size={16} /> }
-  ];
+  const groupMessagesByDate = (msgs) => {
+    const groups = {};
+    msgs.forEach((msg) => {
+      const date = formatDate(msg.createdAt);
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(msg);
+    });
+    return groups;
+  };
+
+  const messageGroups = groupMessagesByDate(messages);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <div className="w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-2">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">{t('chat.title')}</h2>
-            <p className="text-sm text-slate-500">{t('chat.subtitle')}</p>
-          </div>
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-medium hover:bg-slate-800"
-            onClick={() => window.open('https://t.me', '_blank')}
-          >
-            <Link size={16} /> {t('chat.invite_link')}
-          </button>
+    <div className="space-y-4 max-w-4xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">{t('chat.title') || 'Общий чат'}</h2>
+          <p className="text-sm text-slate-500 flex items-center gap-2">
+            <Users size={14} />
+            {t('chat.subtitle') || 'Общение всех студентов'}
+          </p>
         </div>
-        {pinnedMessage && (
-          <Card className="bg-sky-50 border-sky-200">
-            <div className="text-xs uppercase tracking-wide text-sky-600 font-semibold mb-1">
-              {t('chat.pinned_label')}
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm text-sky-600 font-bold">
-                {pinnedMessage.avatar}
-              </div>
-              <div>
-                <div className="text-sm text-slate-900 font-semibold">{pinnedMessage.author}</div>
-                <p className="text-sm text-slate-700 leading-relaxed">{pinnedMessage.text}</p>
-                <div className="text-xs text-slate-500 flex items-center gap-2">
-                  <Star size={14} /> {pinnedMessage.time} · {t(`chat.status.${pinnedMessage.status}`)}
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+        <button
+          onClick={loadMessages}
+          className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition"
+          title="Обновить"
+        >
+          <RefreshCw size={18} />
+        </button>
       </div>
 
-      <div className="grid lg:grid-cols-[3fr,2fr] gap-6">
-        <section className="space-y-4">
-          <Card className="p-4 space-y-4">
-            <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${message.isMine ? 'justify-end' : 'justify-start'}`}
-                >
-                  {!message.isMine && (
-                    <div className="flex items-start mt-1">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-sky-600 font-semibold">
-                        {message.avatar}
-                      </div>
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[18rem] min-w-[10rem] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                      message.isMine ? 'bg-slate-900 text-white rounded-br-lg' : 'bg-gray-100 text-slate-900 rounded-bl-lg'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
-                      <span>{message.isMine ? t('chat.send') : message.author}</span>
-                      <span className="text-[10px] uppercase">
-                        {message.time} · {t(`chat.status.${message.status}`)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-inherit">{message.text}</p>
-                    {message.attachments && (
-                      <div className="mt-2 flex flex-col gap-2">
-                        {message.attachments.map((file, idx) => (
-                          <div
-                            key={`${file.label}-${idx}`}
-                            className="flex items-center gap-2 bg-white/70 border border-dashed border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-600"
-                          >
-                            <Paperclip size={14} /> {file.label}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {message.quickActions && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {message.quickActions.map((action) => (
-                          <span
-                            key={action}
-                            className="text-[11px] px-2 py-1 rounded-full bg-slate-200 text-slate-600"
-                          >
-                            {action}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {message.isMine && (
-                    <div className="flex items-start mt-1">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-semibold">
-                        {message.avatar}
-                      </div>
-                    </div>
-                  )}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      <Card className="p-0 overflow-hidden">
+        <div className="h-[500px] overflow-y-auto p-4 space-y-4 bg-slate-50">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+              <MessageSquare size={48} className="mb-4 opacity-50" />
+              <p>{t('chat.empty') || 'Пока нет сообщений'}</p>
+              <p className="text-sm">Начните общение первым!</p>
+            </div>
+          ) : (
+            Object.entries(messageGroups).map(([date, msgs]) => (
+              <div key={date}>
+                <div className="flex justify-center my-4">
+                  <span className="px-3 py-1 bg-slate-200 text-slate-600 text-xs rounded-full">
+                    {date}
+                  </span>
                 </div>
-              ))}
-            </div>
-            <div className="flex gap-2 items-center pt-2 border-t border-slate-200">
-              <button
-                onClick={toggleRecording}
-                className={`p-2 rounded-full border ${
-                  recording ? 'border-red-500 bg-red-50 text-red-600' : 'border-slate-200 text-slate-500'
-                }`}
-              >
-                <Mic2 size={16} />
-              </button>
-              <input
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder={t('chat.placeholder')}
-                className="flex-1 px-4 py-2 rounded-full border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-              <button
-                onClick={sendMessage}
-                className="p-2 rounded-full bg-sky-600 text-white hover:bg-sky-700 transition"
-              >
-                <Send size={16} />
-              </button>
-            </div>
-          </Card>
-        </section>
-        <aside className="space-y-4">
-          <Card className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700">{t('chat.quick_actions_title')}</h3>
-              <Settings size={16} className="text-slate-500" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {quickActions.map((action) => (
-                <button
-                  key={action.label}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-                >
-                  {action.icon}
-                  {action.label}
-                </button>
-              ))}
-            </div>
-            <div className="text-sm text-slate-500">{t('chat.empty')}</div>
-          </Card>
-          <Card className="p-4 space-y-3 bg-gradient-to-br from-sky-600 to-sky-700 text-white">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs uppercase opacity-80">Telegram</p>
-                <h3 className="text-lg font-semibold">Live channel</h3>
+                <div className="space-y-3">
+                  {msgs.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex gap-3 ${message.isMine ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {!message.isMine && (
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-semibold">
+                            {message.avatar || message.author?.[0] || '?'}
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[70%] px-4 py-2 rounded-2xl ${
+                          message.isMine
+                            ? 'bg-sky-600 text-white rounded-br-md'
+                            : 'bg-white shadow-sm text-slate-900 rounded-bl-md'
+                        } ${message.pending ? 'opacity-70' : ''} ${
+                          message.error ? 'bg-red-100 border border-red-300' : ''
+                        }`}
+                      >
+                        {!message.isMine && (
+                          <div className="text-xs font-semibold text-sky-600 mb-1">
+                            {message.author}
+                          </div>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
+                        <div
+                          className={`text-xs mt-1 flex items-center gap-1 ${
+                            message.isMine ? 'text-sky-200 justify-end' : 'text-slate-400'
+                          }`}
+                        >
+                          {formatTime(message.createdAt)}
+                          {message.pending && <Loader2 size={10} className="animate-spin ml-1" />}
+                          {message.error && <span className="text-red-500 ml-1">!</span>}
+                        </div>
+                      </div>
+                      {message.isMine && (
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-sky-600 flex items-center justify-center text-white font-semibold">
+                            {user?.avatar || user?.firstName?.[0] || user?.name?.[0] || 'U'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <MessageSquare size={20} />
-              </div>
-            </div>
-            <p className="text-sm opacity-90">
-              {t('chat.subtitle')} {t('chat.invite_link')} — {t('chat.quick_actions_title')}.
-            </p>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="p-4 bg-white border-t border-slate-200">
+          <div className="flex gap-3 items-end">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={t('chat.placeholder') || 'Напишите сообщение...'}
+              rows={1}
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
+              style={{ minHeight: '48px', maxHeight: '120px' }}
+            />
             <button
-              onClick={() => window.open('https://t.me/collegehub', '_blank')}
-              className="w-full rounded-full bg-white text-slate-900 font-semibold py-2"
+              onClick={sendMessage}
+              disabled={!draft.trim() || sending}
+              className="p-3 rounded-xl bg-sky-600 text-white hover:bg-sky-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t('chat.invite_link')}
+              {sending ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <Send size={20} />
+              )}
             </button>
-          </Card>
-        </aside>
-      </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
