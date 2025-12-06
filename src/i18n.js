@@ -80,7 +80,7 @@ const translations = {
         no_projects: 'Связанные проекты отсутствуют'
       }
     },
-    projects: { heading: 'Студенческие Проекты', subtitle: 'Лучшие проекты студентов. Присоединяйтесь к команде или создайте свой.', empty: 'Здесь пока ничего нет', add: 'Добавить проект', form: { title: 'Название проекта', author: 'Автор', status: 'Статус', roles_placeholder: 'Frontend, Backend, Designer...' }, details: 'Подробнее', join_button: 'Вступить', labels: { author: 'Автор:', needed: 'Кого ищем:', team: 'Команда' }, statuses: { script: 'Сценарий', developing: 'В разработке', mvp: 'Запуск MVP', done: 'Завершено' }, title: { smart_greenhouse: 'Умная теплица', college_hub_app: 'College Hub App', short_film: 'Короткометражный фильм' }, description: { smart_greenhouse: 'Умная система управления климатом для тепличного хозяйства с использованием IoT и искусственного интеллекта', college_hub: 'Мобильное приложение для управления учебной жизнью студентов с интеграцией расписания, клубов и проектов', short_film: 'Документальный короткометражный фильм о студенческой жизни и достижениях нашего колледжа' } },
+    projects: { heading: 'Студенческие Проекты', subtitle: 'Лучшие проекты студентов. Присоединяйтесь к команде или создайте свой.', empty: 'Здесь пока ничего нет', add: 'Добавить проект', form: { title: 'Название проекта', author: 'Автор', status: 'Статус', roles_placeholder: 'Frontend, Backend, Designer...' }, details: 'Подробнее', join_button: 'Вступить', labels: { author: 'Автор:', needed: 'Кого ищем:', team: 'Команда' }, statuses: { script: 'Сценарий', developing: 'В разработке', mvp: 'Запуск MVP', done: 'Завершено' }, title: { smart_greenhouse: 'Умная теплица', college_hub_app: 'College Hub App', short_film: 'Короткометражный фильм' } },
     activity: {
       empty_title: 'Вы не состоите в клубах или проектах',
       empty_message: 'Присоединяйтесь к сообществам или начните свой проект, чтобы здесь появилась история вашей активности.',
@@ -145,7 +145,7 @@ const translations = {
       empty: 'Здесь пока нет сообщений'
     },
     common: { create: 'Создать', cancel: 'Отмена', at: 'в', details: 'Подробнее', close: 'Закрыть', save: 'Сохранить', access_denied: 'Доступ запрещён', empty_state: 'Здесь пока ничего нет', support: 'Служба поддержки' },
-    profile: { title: 'Профиль', edit: 'Редактировать', cancel: 'Отмена', full_name: 'Полное имя', student_id_label: 'Student ID', role_label: 'Должность', placeholder_role: 'Студент, 2 курс', save_success: 'Профиль успешно обновлен', save: 'Сохранить', student_id_invalid: 'Student ID должен быть 6 цифр', not_specified: 'Не указано' },
+    profile: { title: 'Профиль', edit: 'Редактировать', cancel: 'Отмена', full_name: 'Полное имя', first_name: 'Имя', last_name: 'Фамилия', student_id_label: 'Student ID', role_label: 'Должность', placeholder_role: 'Студент, 2 курс', save_success: 'Профиль успешно обновлен', save: 'Сохранить', student_id_invalid: 'Student ID должен быть 6 цифр', not_specified: 'Не указано' },
     roles: { frontend: 'Frontend разработчик', backend: 'Backend разработчик', designer: 'Дизайнер', biologist: 'Биолог', marketing: 'Маркетолог', actor: 'Актёр', editor: 'Монтажёр' },
     language: { switch_to_en: 'Переключить на English', switch_to_ru: 'Switch to Russian' },
     app: { name: 'College Hub' },
@@ -235,7 +235,7 @@ const translations = {
         no_projects: 'No linked projects'
       }
     },
-    projects: { heading: 'Student Projects', subtitle: 'Top student work. Join a team or start your own.', empty: 'Nothing here yet', add: 'Add project', form: { title: 'Project title', author: 'Author', status: 'Status', roles_placeholder: 'Frontend, Backend, Designer...' }, details: 'Details', join_button: 'Join', labels: { author: 'Author:', needed: 'Looking for:', team: 'Team' }, statuses: { script: 'Script', developing: 'Developing', mvp: 'MVP Launch', done: 'Done' }, title: { smart_greenhouse: 'Smart Greenhouse', college_hub_app: 'College Hub App', short_film: 'Short Film' }, description: { smart_greenhouse: 'Smart climate control system for greenhouse farming using IoT and artificial intelligence', college_hub: 'Mobile app for managing student academic life with integrated schedule, clubs and projects', short_film: 'Documentary short film about student life and achievements of our college' } },
+    projects: { heading: 'Student Projects', subtitle: 'Top student work. Join a team or start your own.', empty: 'Nothing here yet', add: 'Add project', form: { title: 'Project title', author: 'Author', status: 'Status', roles_placeholder: 'Frontend, Backend, Designer...' }, details: 'Details', join_button: 'Join', labels: { author: 'Author:', needed: 'Looking for:', team: 'Team' }, statuses: { script: 'Script', developing: 'Developing', mvp: 'MVP Launch', done: 'Done' }, title: { smart_greenhouse: 'Smart Greenhouse', college_hub_app: 'College Hub App', short_film: 'Short Film' } },
     activity: {
       empty_title: 'You are not a member of any clubs or projects',
       empty_message: 'Join communities or start your project to see activity history here.',
@@ -300,7 +300,7 @@ const translations = {
       empty: 'No messages yet'
     },
     common: { create: 'Create', cancel: 'Cancel', at: 'at', details: 'Details', close: 'Close', save: 'Save', access_denied: 'Access denied', empty_state: 'Nothing here yet', support: 'Support' },
-    profile: { title: 'Profile', edit: 'Edit', cancel: 'Cancel', full_name: 'Full name', student_id_label: 'Student ID', role_label: 'Position', placeholder_role: 'Student, 2nd year', save_success: 'Profile updated successfully', save: 'Save', student_id_invalid: 'Student ID must be 6 digits', not_specified: 'Not specified' },
+    profile: { title: 'Profile', edit: 'Edit', cancel: 'Cancel', full_name: 'Full name', first_name: 'First Name', last_name: 'Last Name', student_id_label: 'Student ID', role_label: 'Position', placeholder_role: 'Student, 2nd year', save_success: 'Profile updated successfully', save: 'Save', student_id_invalid: 'Student ID must be 6 digits', not_specified: 'Not specified' },
     roles: { frontend: 'Frontend developer', backend: 'Backend developer', designer: 'Designer', biologist: 'Biologist', marketing: 'Marketing specialist', actor: 'Actor', editor: 'Editor' },
     language: { switch_to_en: 'Switch to English', switch_to_ru: 'Переключить на Russian' },
     app: { name: 'College Hub' },
