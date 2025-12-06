@@ -54,11 +54,18 @@ class ApiClient {
       }
 
       const errorBody = parseJson();
-      const message = isJson && errorBody
+      let message = isJson && errorBody
         ? errorBody.error || errorBody.message || JSON.stringify(errorBody)
         : text || `API Error: ${response.statusText}`;
 
-      throw new Error(message);
+      // Добавляем статус код для лучшей обработки
+      if (response.status === 404) {
+        message = message || 'User not found';
+      }
+
+      const error = new Error(message);
+      error.status = response.status;
+      throw error;
     }
 
     if (!text) {

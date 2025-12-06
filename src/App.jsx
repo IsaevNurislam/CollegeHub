@@ -157,7 +157,18 @@ export default function App() {
       addNotification(welcomeMessage, 'success');
       
     } catch (error) {
-      const errorMessage = error?.message || 'Ошибка входа. Проверьте данные.';
+      let errorMessage = 'Ошибка входа. Проверьте данные.';
+      
+      if (error?.status === 404 || error?.message?.includes('not found') || error?.message?.includes('User not found')) {
+        errorMessage = 'Аккаунт не найден. Сначала зарегистрируйтесь.';
+      } else if (error?.status === 401 || error?.message?.includes('Invalid credentials') || error?.message?.includes('password')) {
+        errorMessage = 'Неверный пароль.';
+      } else if (error?.status === 409 || error?.message?.includes('already exists') || error?.message?.includes('already registered')) {
+        errorMessage = 'Этот Student ID уже зарегистрирован. Войдите в аккаунт.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       addNotification(errorMessage, 'error');
     }
   };
