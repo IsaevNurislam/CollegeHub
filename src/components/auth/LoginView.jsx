@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GraduationCap, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
+import { GraduationCap, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus, LogIn, X } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
 export default function LoginView({ onLogin }) {
@@ -11,8 +11,15 @@ export default function LoginView({ onLogin }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [notification, setNotification] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isRegister = mode === 'register';
+
+  const showNotification = (message, type = 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
   const capitalizeFirstLetter = (value) => {
     if (!value) return '';
@@ -25,12 +32,16 @@ export default function LoginView({ onLogin }) {
     if (isRegister) {
       if (!firstName.trim()) newErrors.firstName = t('login.errors.required') || 'Обязательное поле';
       else if (firstName.trim().length < 2) newErrors.firstName = t('login.errors.min_chars') || 'Минимум 2 символа';
+      else if (!/^[a-zA-Zа-яА-ЯёЁ]+$/.test(firstName.trim())) newErrors.firstName = 'Только буквы';
       
       if (!lastName.trim()) newErrors.lastName = t('login.errors.required') || 'Обязательное поле';
       else if (lastName.trim().length < 2) newErrors.lastName = t('login.errors.min_chars') || 'Минимум 2 символа';
+      else if (!/^[a-zA-Zа-яА-ЯёЁ]+$/.test(lastName.trim())) newErrors.lastName = 'Только буквы';
     }
     
-    if (!/^[0-9]{6}$/.test(studentId)) {
+    if (!studentId.trim()) {
+      newErrors.studentId = t('login.errors.required') || 'Обязательное поле';
+    } else if (!/^[0-9]{6}$/.test(studentId)) {
       newErrors.studentId = 'ID должен содержать ровно 6 цифр';
     }
     
@@ -43,12 +54,20 @@ export default function LoginView({ onLogin }) {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateInputs();
     setErrors(newErrors);
     
-    if (Object.keys(newErrors).length === 0) {
+    if (Object.keys(newErrors).length > 0) {
+      const errorCount = Object.keys(newErrors).length;
+      showNotification(`Исправьте ${errorCount} ${errorCount === 1 ? 'ошибку' : 'ошибки'} в форме`, 'error');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
       const credentials = {
         studentId: studentId.trim(),
         password: password.trim(),
@@ -60,7 +79,11 @@ export default function LoginView({ onLogin }) {
         credentials.isRegistration = true;
       }
       
-      onLogin(credentials);
+      await onLogin(credentials);
+    } catch {
+      // Ошибка обрабатывается в App.jsx
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,6 +102,19 @@ export default function LoginView({ onLogin }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      {/* Уведомление */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg flex items-center gap-3 ${
+          notification.type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+        }`}>
+          <AlertCircle size={20} />
+          <span className="flex-1 text-sm">{notification.message}</span>
+          <button onClick={() => setNotification(null)} className="hover:opacity-80">
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 text-sky-600 mb-4">
@@ -215,10 +251,20 @@ export default function LoginView({ onLogin }) {
 
           <button
             type="submit"
-            className="w-full bg-sky-600 text-white py-3 rounded-lg font-bold hover:bg-sky-700 transition flex items-center justify-center gap-2"
+            disabled={isLoading}
+            className={`w-full bg-sky-600 text-white py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-sky-700'}`}
           >
-            {isRegister ? (t('login.register_button') || 'Зарегистрироваться') : (t('login.submit') || 'Войти')}
-            <ArrowRight size={20} />
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                {t('common.loading') || 'Загрузка...'}
+              </>
+            ) : (
+              <>
+                {isRegister ? (t('login.register_button') || 'Зарегистрироваться') : (t('login.submit') || 'Войти')}
+                <ArrowRight size={20} />
+              </>
+            )}
           </button>
         </form>
 
