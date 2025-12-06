@@ -306,6 +306,11 @@ const normalizeChatMessage = (message) => ({
   ...message,
   createdAt: message.created_at || message.createdAt,
   isMine: message.is_mine ?? message.isMine ?? false,
+  userId: message.user_id || message.userId,
+  author: message.author || message.user_name || message.userName || 'Аноним',
+  avatar: message.avatar || message.user_avatar || message.userAvatar || null,
+  studentId: message.student_id || message.studentId || null,
+  replyTo: message.reply_to || message.replyTo || null,
 });
 
 export const chatService = {
