@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../common/UI';
-import { newsService, parliamentService, clubsService, projectsService } from '../../api/services';
+import { newsService, parliamentService, clubsService, projectsService, uploadService } from '../../api/services';
 import { Trash2, Edit2, CheckCircle, Mail, Check } from 'lucide-react';
 import ConfirmModal from '../common/ConfirmModal';
 import Modal from '../common/Modal';
@@ -242,9 +242,14 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
 
   const handleAvatarUpload = (file) => {
     if (!file) return;
+    // Store the file for Cloudinary upload, and show preview
     const reader = new FileReader();
     reader.onload = () => {
-      setMemberForm((prev) => ({ ...prev, avatarUrl: reader.result || '' }));
+      setMemberForm((prev) => ({ 
+        ...prev, 
+        avatarUrl: reader.result || '',
+        avatarFile: file // Store file for upload
+      }));
     };
     reader.readAsDataURL(file);
   };
@@ -288,7 +293,25 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
     if (!validateMemberForm(normalizedForm)) return;
     setIsFormSaving(true);
     try {
-      await parliamentService.addMember(toSnakeCase(normalizedForm));
+      let avatarUrl = normalizedForm.avatarUrl;
+      
+      // If there's a file to upload, upload to Cloudinary first
+      if (normalizedForm.avatarFile) {
+        try {
+          const uploadResult = await uploadService.uploadImage(normalizedForm.avatarFile, 'parliament-avatars');
+          avatarUrl = uploadResult.url || uploadResult.secure_url;
+        } catch (uploadError) {
+          console.error('Avatar upload failed:', uploadError);
+          setFormError('Не удалось загрузить фото');
+          setIsFormSaving(false);
+          return;
+        }
+      }
+      
+      const formToSend = { ...normalizedForm, avatarUrl };
+      delete formToSend.avatarFile;
+      
+      await parliamentService.addMember(toSnakeCase(formToSend));
       await loadParliament();
       setIsAddModalOpen(false);
       setMemberForm({ ...emptyMemberForm });
@@ -322,7 +345,25 @@ export default function AdminView({ user, feedback = [], onAcceptFeedback }) {
     if (!validateMemberForm(normalizedForm)) return;
     setIsFormSaving(true);
     try {
-      await parliamentService.updateMember(currentMember.id, toSnakeCase(normalizedForm));
+      let avatarUrl = normalizedForm.avatarUrl;
+      
+      // If there's a file to upload, upload to Cloudinary first
+      if (normalizedForm.avatarFile) {
+        try {
+          const uploadResult = await uploadService.uploadImage(normalizedForm.avatarFile, 'parliament-avatars');
+          avatarUrl = uploadResult.url || uploadResult.secure_url;
+        } catch (uploadError) {
+          console.error('Avatar upload failed:', uploadError);
+          setFormError('Не удалось загрузить фото');
+          setIsFormSaving(false);
+          return;
+        }
+      }
+      
+      const formToSend = { ...normalizedForm, avatarUrl };
+      delete formToSend.avatarFile;
+      
+      await parliamentService.updateMember(currentMember.id, toSnakeCase(formToSend));
       await loadParliament();
       setIsEditModalOpen(false);
       setCurrentMember(null);
