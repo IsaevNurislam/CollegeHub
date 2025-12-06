@@ -169,7 +169,10 @@ export default function App() {
         errorMessage = error.message;
       }
       
-      addNotification(errorMessage, 'error');
+      // Re-throw with user-friendly message for LoginView to display
+      const userError = new Error(errorMessage);
+      userError.userMessage = errorMessage;
+      throw userError;
     }
   };
 

@@ -80,8 +80,10 @@ export default function LoginView({ onLogin }) {
       }
       
       await onLogin(credentials);
-    } catch {
-      // Ошибка обрабатывается в App.jsx
+    } catch (error) {
+      // Показываем ошибку от сервера
+      const message = error?.userMessage || error?.message || 'Ошибка входа';
+      showNotification(message, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -257,7 +259,7 @@ export default function LoginView({ onLogin }) {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                {t('common.loading') || 'Загрузка...'}
+                Загрузка...
               </>
             ) : (
               <>
